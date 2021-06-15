@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="../v4web/js/vendors/socket.io.js"></script>
+    <script src="../v4web/js/vendors/vue.js"></script>
+    <script src="../v4web/js/vendors/jquery-3.1.1.min.js"></script>
+    <script src="../v4web/js/vendors/tether.min.js"></script>
+    <script src="../v4web/js/vendors/bootstrap.min.js"></script>
+    <script src="../v4web/js/base/functions.js"></script>
+    <script src="../v4web/js/base/i18n.js"></script>
+    <script src="../v4web/js/base/misc.js"></script>
+    <script src="../v4web/js/base/logging.js"></script>
+    <script src="../v4web/js/app/sensors/isensit.js"></script>
+    
+    <link href="c3/c3.css" rel="stylesheet">
+    <script src="c3/jquery-1.11.0.min.js"></script>
+    <script src="c3/d3-5.4.0.min.js" charset="utf-8"></script>
+    <script src="c3/c3.min.js"></script>
+    
+    <script type="text/javascript">
+      Vue.config.devtools = true;
+      var readyToGo = fit20.i18n.getTranslations();
+      // Create and install the i18n plugin.
+      var i18nPlugin = {
+        'install': function(Vue, options) {
+          Vue.prototype.$t = function(text, params, language) {return fit20.i18n.translate(text, params, language)}
+        }
+      };
+      Vue.use(i18nPlugin);
+      window.$t = function(text, params, language) {return fit20.i18n.translate(text, params, language)};
+      Object.assign(fit20, {
+        app: {
+          userInfo: {}
+        },
+        components: {
+        },
+        store: {
+          state: {
+            machines: {},
+            currentStudio: {name: "Studio Name"}
+          }
+        },
+        logServer: function(){}
+      });
+      fit20.app.addAlert = function(){};
+      fit20.sensors._LOCALHOST = false; // Do not use localhost debugging.
+      var appVersion = 'test';
+    </script>
+    <style type="text/css">
+      section {
+        margin: 1ex;
+        border: 1px #444;
+      }
+      div {
+        margin: 1ex;
+      }
+      .progress {
+        height: 40px;
+      }
+      .progress-bar {
+        transition: width .1s linear;
+      }
+      .progress-overlay {
+        position: absolute;
+        background-color: #00000033;
+        border-radius: 0;
+        height: 82px;
+        margin-left: 0; 
+      }
+      #gwResponse {
+        border: 1px solid gray;
+        border-radius: 3px;
+        height: 1.8em;
+      }
+    </style>
+  </head>
+  <body>
+  
+  <div id="main"></div>
+
+  <script type="text/javascript">
+    readyToGo.then(function() {
+      
+      Vue.component('gateway', {
+        'template':
+        `<section id="gateway">
+          <h3>Gateway</h3>
+          <div class="container-fluid">
+            <div class="form-row alert alert-danger" v-if="usingHTTPS">
+              Please use http, not https. Sensors do not work with https.
+            </div><!-- form-row -->
+            <div class="form-row">
+              <div class="form-group col">
+                <label for="sensor_gateway_ip">sensor address</label>
+                <input type="text" size="20" id="sensor_gateway_ip"
+                  pattern="\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|.+\\.local\\.?"
+                  v-model="gatewayIPAddress">
+                <button type="button" class="btn btn-primary"
+                  @click="testGatewayIPAddress(studio)"
+                >Connect</button>
+              </div>
+              <div class="col">
+                <span class="pt-1" id="gatewayStatus"></span>
+              </div>
+            </div><!-- form-row -->
+            <div class="form-row">
+              <div class="form-group col">
+                <label for="studio_id">studio</label>
+                <select id="studio_id" v-model="studioId">
+                  <option v-for="studioId in Object.keys(studioInfo)" :value="studioId">{{ studioInfo[studioId].name }}</option>
+                </select>
+              </div>
+              <div class="form-group col">
+                <label for="studio_id">machine</label>
+                <select id="machine_id" v-model="machineId" v-if="studioInfo[studioId]">
+                  <option v-for="machine in studioInfo[studioId].machines" :value="machine.id">{{ machine.name }}</option>
+                </select>
+              </div>
+              <div class="form-group col">
+                 <label for="studio_id">easing</label>
+                 <input type="range" min="0.0" max="5.0" step="0.05" v-model="easing">
+                 <span>{{ easing }}</span>
+              </div>
+            </div><!-- form-row -->
+          </div><!-- container-fluid -->
+        </section>`,
+        'data': function(){return {
+          gatewayIPAddress: '192.168.x.y',
+          studioId: '',
+          memberId: '314159265',
+          machineId: '',
+          easing: '0.6',
+          studioInfo: {
+              '16001' : {
+                name: 'Test-Nico',
+                machines: [
+                  {id: '3001', name: 'just a sensor'}
+                ]
+              },
+              '5831083287379968' : {
+                name: 'Hattem',
+                machines: [
+                  {"id":"3001","longName":"Nautilus One Chest Press","name":"Chest Press"},
+                  {"id":"5001","longName":"Nautilus One Lat Pull","name":"Lat Pull"},
+                  {"id":"1001","longName":"Nautilus One Leg Press","name":"Leg Press"},
+                  {"id":"4001","longName":"Nautilus One Abdominals","name":"Abdominals"},
+                  {"id":"1002","longName":"Nautilus One Back Extension","name":"Back Extension"},
+                  {"id":"4002","longName":"Nautilus One Adduction","name":"Adduction"},
+                  {"id":"2002","longName":"Nautilus One Abduction","name":"Abduction"}
+                ]
+              }
+          } // studioInfo
+        }}, // data
+        'computed': {
+          studio : function(){
+            return fit20.store.state.currentStudio;
+          },
+          usingHTTPS: function(){
+            return location.href.startsWith('https:');
+          },
+          machineScreenURL: function(){
+           return `http://${this.gatewayIPAddress}/fit20/ms.html?studio=${this.studioId}&machine=${this.machineId}&member=${this.memberId}&start=false&stop=false&restart=false`; 
+          }
+        }, // computed
+        'methods': {
+          testGatewayIPAddress: function(studio) {
+            fit20.log(`* testing gateway at ${this.gatewayIPAddress}`);
+            $('#gatewayStatus').html('<i>Connecting...</i>');
+            studio.gatewayIPAddress = this.gatewayIPAddress;
+            fit20.sensors.connect(studio).
+              then(function(message) {
+                $('#gatewayStatus').removeClass('alert-danger').html($t(message));
+              }).
+              catch(function(message) {
+                $('#gatewayStatus').addClass('alert-danger').html($t(message));
+              });
+          }, // testGatewayIPAddress
+          setLocal: function(did, value) {
+            document.cookie = `${did}=${encodeURIComponent(value)}`;
+            this[did] = value;
+            this.$emit('set', did, value);
+            fit20.log(`Setting ${did} = ${value}`);
+            if (did == 'machineId') {
+              fit20.store.state.machines[value] = {id: value, longName: "Machine Name"};
+            }
+            if (did == 'studioId') {
+              fit20.store.state.currentStudio.id = value;
+            }
+            if (did == 'gatewayIPAddress') {
+              fit20.store.state.currentStudio.gatewayIPAddress = value;
+            }
+          }
+        }, // methods
+        'watch': {
+          gatewayIPAddress: function(gatewayIPAddress) {
+            this.setLocal('gatewayIPAddress', gatewayIPAddress);
+          },
+          studioId: function(studioId) {
+            this.setLocal('studioId', studioId);
+          },
+          machineId: function(machineId) {
+            this.setLocal('machineId', machineId);
+          },
+          easing: function(easing) {
+            this.setLocal('easing', easing);
+          }
+        }, // watch
+        'mounted': function() {
+          var scope = this;
+          // Read from the cookie.
+          var readCookie = function(cid) {
+            var stored = decodeURIComponent(document.cookie.replace(RegExp(`(?:(?:^|.*;\\s*)${cid}\\s*=\\s*([^;]*).*$)|^.*$`), '$1'));
+            if (stored) {
+              scope.setLocal(cid, stored);
+            }
+          };
+          readCookie('gatewayIPAddress');
+          readCookie('studioId');
+          readCookie('machineId');
+          readCookie('easing');
+        } // mounted
+      });
+    
+      Vue.component('exercise', {
+        'template':
+        `<section id="exercise">
+          <h3>Exercise</h3>
+          <p>
+            Press [Select] first. If the bars do not appear after a few seconds, try pressing [Done] and then [Select] again.
+          </p>
+          <p>
+            After [Start], there is an invisible 3 second count-in.
+          </p>
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col">
+                <button type="button" class="btn btn-primary" @click="selectExercise">Select<br>(create)</button>
+              </div>
+              <div class="col" v-if="selectingExercise">Looking for the sensor.</div>
+              <div class="col" v-show="exerciseSelected">
+                <button type="button" class="btn" :class="{'btn-primary': isCalibrated[0], 'btn-danger': !isCalibrated[0]}" @click="calibrate(0)">
+                  <b class="fas fa-step-backward">|&lt;&lt;</b><br>{{calibration[0]}}
+                </button>
+                <button type="button" class="btn" :class="{'btn-primary': isCalibrated[1], 'btn-danger': !isCalibrated[1]}" @click="calibrate(1)">
+                  <b class="fas fa-step-forward">&gt;&gt;|</b><br>{{calibration[1]}}
+                </button>
+              </div>
+              <div class="col" v-show="exerciseSelected">
+                <button type="button" class="btn btn-success" @click="startExercise">Start<br>&#xA0;</button>
+              </div>
+              <div class="col" v-show="exerciseSelected">
+                <button type="button" class="btn btn-warning" @click="stationaryExercise">Stationary<br>(pause)</button>
+              </div>
+              <div class="col" v-show="exerciseSelected">
+                <button type="button" class="btn btn-danger" @click="stopExercise">Stop<br>&#xA0;</button>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-info" @click="finishExercise">Done<br>(complete)</button>
+              </div>
+              <div class="col">
+              </div>
+            </div><!-- row -->
+            <div class="row" id = response>
+            </div><!-- row -->
+          </div><!-- container-fluid -->  
+          <div id="gwResponse"></div>
+          <div class="container-fluid border" v-if="isNotResults(exerciseData)">
+            <div class="progress row my-1 progress-overlay" :style="'left: 14px; width:'+calibData.min+'%;'">
+            </div>
+            <div class="progress row my-1 progress-overlay" :style="'left: '+calibData.max+'%; width:'+calibData.min+'%;'">
+            </div>
+            
+            <div class="progress row my-1"
+              :style="'position: absolute;left: 50%; width:'+calibData.min+'%; height: 82px; font-size: 40px; align-content: center; background-color: transparent;'">
+              {{ exerciseData.count || '' }}
+            </div>
+            
+            <div class="progress row my-1">
+              <div class="progress-bar my-0 bg-info" :style="'width:'+exerciseData.reference_bar+'%;'"></div>
+            </div>
+            <div class="progress row my-1">
+              <div class="progress-bar my-0 bg-danger" :style="'width:'+exerciseData.actual_bar+'%;'"></div>
+            </div>
+          </div><!-- container-fluid -->
+          
+          <div id="chart" class="c3"></div>
+          
+        </section>`,
+        'props': ['studioId', 'machineId', 'easing'],
+        'data': function(){return {
+          member: {id: 314159265, fullName: "Member Name", name: "Member Name"},
+          isCalibrated: [false, false],
+          calibration: ['-', '-'],
+          startTime: 0,
+          exerciseData: {},
+          calibData: {min: Math.round((0.1) * 100 / 1.2), max: Math.round((1.1) * 100 / 1.2)},
+          selectingExercise: false, exerciseSelected: false,
+          chart: undefined, chartTimes: undefined, referencePoss: undefined, actualPoss: undefined // the c3 chart
+        }}, // data
+        'computed': {
+          memberId: function(){return this.member.id;}
+        }, // computed
+        'methods': {
+          errorHandler: function(type, description) {
+            description = JSON.stringify(description);
+            var message = `${$t("M0916")} (${description})`;
+            fit20.log(`!! Closing sensor panel after error: ${description}`);
+          },
+          stateHandler: function(state) {
+            if (isDefined(state.isCalibrated)) {
+              this.isCalibrated = state.isCalibrated;
+            }
+            if (isDefined(state.calibration)) {
+              this.calibration = state.calibration;
+            }
+          },
+          dataHandler: function(data) {
+            //console.info(JSON.stringify(data));
+            var exerciseRunning = this.startTime > 10;
+            var durationSec = exerciseRunning ? (Date.now() - this.startTime) / 1000 : 0;
+            var durHalfRep = durationSec % 20.0;
+            if (durHalfRep > 10.0) durHalfRep = 20.0 - durHalfRep;
+            // Reference position in [0.0 .. 1.0]
+            var refPos;
+            var ease = this.easing;
+            if (durHalfRep < 0) {
+              refPos = 0;
+            } else if (durHalfRep < ease) {
+              refPos = (0.5 * durHalfRep*durHalfRep) / ((10 - ease) * ease);
+            } else if (durHalfRep <= 10 - ease) {
+              refPos = ease * (durHalfRep - 0.5*ease) / ((10 - ease) * ease);
+            } else {
+              refPos = (ease * (10 - ease) - 0.5 * Math.pow(10 - durHalfRep, 2)) / ((10 - ease) * ease);
+            }
+            //console.info(`${durationSec} - ${refPos} (${Math.round((refPos + 0.1) * 100 / 1.2)})`);
+            var previousChartTime = this.chartTimes.length > 0 ? this.chartTimes[this.chartTimes.length-1] : 0;
+            if (durationSec > previousChartTime + 0.15) {
+              while (this.chartTimes.length > 100) {
+                this.chartTimes.shift();
+                this.referencePoss.shift();
+                this.actualPoss.shift();
+              }
+              this.chartTimes.push(durationSec);
+              this.referencePoss.push(refPos*100);
+              this.actualPoss.push(data.actual_position*100);
+              this.chart.load({
+                columns : [ [ 'time' ].concat(this.chartTimes),
+                            [ 'reference' ].concat(this.referencePoss),
+                            [ 'actual' ].concat(this.actualPoss)
+                          ]
+              });
+            }
+            this.exerciseData = {
+              count: data.count || 0,
+              actual_position: data.actual_position || 0,
+              reference_position: refPos, //data.reference_position || 0,
+              tracking: data.tracking || 0,
+              repetition: data.repetition || 0,
+              reference_bar: Math.round((refPos + 0.1) * 100 / 1.2),
+              actual_bar: Math.round((data.actual_position + 0.1) * 100 / 1.2)
+            };
+          },
+          resultHandler: function(results) {
+            if (isDefined(results.average)) {
+              ['average', 'metronome', 'steady', 'range'].forEach(function(qs) {
+                results[qs] = Math.round(results[qs]);
+              });
+              this.exerciseData = results;
+            }
+          },
+          isNotResults: function(data) {
+            return isUndefined(data.average);
+          },
+          afterRequest: function(caller, callback) {
+            var scope = this;
+            return function(result){
+              if (callback) callback();
+              $('#gwResponse')
+                .animate({backgroundColor: '#777'})
+                .text(`${caller}: ${$t(JSON.stringify(result))}`)
+                .animate({backgroundColor: '#fff'});
+              fit20.log(`** Result of ${caller}: ${JSON.stringify(result)}`);
+              if (!fit20.sensors.active) {
+                fit20.log('** Re-activating sensor.');
+                fit20.sensors.active = true;
+                fit20.sensors_isensit.currentExercises[scope.memberId] = {};
+              }
+            };
+          },
+          selectExercise: function() {
+            var scope = this;
+            scope.selectingExercise = true;
+            fit20.sensors.configureExercise(this.studioId, this.machineId, this.member, this.errorHandler, this.stateHandler, this.dataHandler, this.resultHandler).
+            then(this.afterRequest('selectExercise', () => {scope.exerciseSelected = true}),
+                this.afterRequest('selectExercise', () => {scope.exerciseSelected = false})).
+            then(() => {
+              scope.selectingExercise = false
+              scope.chartTimes = [];
+              scope.referencePoss = [];
+              scope.actualPoss = [];
+              scope.chart = c3.generate({
+                bindto: '#chart', transition: { duration: 0 },
+                data: {
+                  x: 'time',
+                  columns: []
+                }
+              });
+            });
+          },
+          // X can be 0 (start position) or 1 (end position)
+          calibrate: function(x) {
+            fit20.log(`* Sensor calibrate ${JSON.stringify(x)}`);
+            fit20.sensors.calibrate(this.studioId, this.memberId, x).
+            catch(function(error){
+              fit20.log(`! calibrate failed: ${$t(error.message)}`);
+            })
+          },
+          startExercise: function() {
+            this.startTime = Date.now() + 3000;
+            var scope = this;
+            fit20.sensors.startExercise(this.studioId, this.memberId).
+            then(this.afterRequest('startExercise'), this.afterRequest('startExercise'));
+          },
+          stationaryExercise: function(){
+            fit20.sensors.stationaryExercise(this.studioId, this.memberId).
+            then(this.afterRequest('stationaryExercise'), this.afterRequest('stationaryExercise'));
+          },
+          stopExercise: function(){
+            this.startTime = 0;
+            fit20.sensors.stopExercise(this.studioId, this.memberId).
+            then(this.afterRequest('stopExercise'), this.afterRequest('stopExercise'));
+          },
+          finishExercise: function() {
+            var scope = this;
+            fit20.sensors.finishExercise(this.studioId, this.memberId).
+            then(this.afterRequest('finishExercise', () => {scope.exerciseSelected = false}),
+                 this.afterRequest('finishExercise', () => {scope.exerciseSelected = false}));
+          } // finishExercise
+        }, // methods
+        'watch': {
+        }, // watch
+        'mounted': function() {
+        } // mounted
+      });
+      
+    }); // readyToGo
+  </script>
+      
+  <script type="text/javascript">
+    readyToGo.then(function() {
+    
+      new Vue({
+        el: '#main',
+        template: `
+          <main>
+            <gateway @set="setData"></gateway>
+            <exercise :studioId="studioId" :machineId="machineId" :easing="easing"></exercise>
+          </main>
+        `,
+        data: {
+          gatewayIPAddress : '',
+          studioId: '',
+          machineId: '',
+          easing: null
+        },
+        computed: {
+        },
+        methods: {
+          setData: function(did, value) {
+            console.log(`Set ${did} = ${value}`);
+            this[did] = value;
+          }
+        }
+      });
+      
+    }); // readyToGo
+    
+    window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
+      fit20.log("!!Error : " + $t(errorMsg));
+      return false;
+    }
+  </script>
+  
+  <p>Open the developer console in your browser to see what is happening.</p>
+
+  </body>
+</html>

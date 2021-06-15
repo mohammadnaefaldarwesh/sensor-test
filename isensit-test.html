@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="../v4web/js/vendors/socket.io.js"></script>
+    <script src="../v4web/js/vendors/vue.js"></script>
+    <script src="../v4web/js/vendors/jquery-3.1.1.min.js"></script>
+    <script src="../v4web/js/vendors/tether.min.js"></script>
+    <script src="../v4web/js/vendors/bootstrap.min.js"></script>
+    <script src="../v4web/js/base/functions.js"></script>
+    <script src="../v4web/js/base/i18n.js"></script>
+    <script src="../v4web/js/base/misc.js"></script>
+    <script src="../v4web/js/base/logging.js"></script>
+    <script src="../v4web/js/app/sensors/isensit.js"></script>
+    <script type="text/javascript">
+      Vue.config.devtools = true;
+      var readyToGo = fit20.i18n.getTranslations();
+      // Create and install the i18n plugin.
+      var i18nPlugin = {
+        'install': function(Vue, options) {
+          Vue.prototype.$t = function(text, params, language) {return fit20.i18n.translate(text, params, language)}
+        }
+      };
+      Vue.use(i18nPlugin);
+      window.$t = function(text, params, language) {return fit20.i18n.translate(text, params, language)};
+      Object.assign(fit20, {
+        app: {
+          userInfo: {}
+        },
+        components: {
+        },
+        store: {
+          state: {
+            machines: {},
+            currentStudio: {name: "Studio Name"}
+          }
+        },
+        logServer: function(){}
+      });
+      fit20.app.addAlert = function(){};
+      fit20.sensors._LOCALHOST = false; // Do not use localhost debugging.
+      var appVersion = 'test';
+    </script>
+    <style type="text/css">
+      section {
+        margin: 1ex;
+        border: 1px #444;
+      }
+      div {
+        margin: 1ex;
+      }
+      .progress {
+        height: 4px;
+      }
+      #gwResponse {
+        border: 1px solid gray;
+        border-radius: 3px;
+        height: 1.8em;
+      }
+    </style>
+  </head>
+  <body>
+  
+  <div id="main"></div>
+
+  <script type="text/javascript">
+    readyToGo.then(function() {
+      
+      Vue.component('gateway', {
+        'template':
+        `<section id="gateway">
+          <h3>Gateway</h3>
+          <div class="container-fluid">
+            <div class="form-row alert alert-danger" v-if="usingHTTPS">
+              Please use http, not https. Sensors do not work with https.
+            </div><!-- form-row -->
+            <div class="form-row">
+              <div class="form-group col-8">
+                <label for="sensor_gateway_ip">sensor address</label>
+                <input type="text" size="20" id="sensor_gateway_ip"
+                  pattern="\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|.+\\.local\\.?"
+                  v-model="gatewayIPAddress">
+                <button type="button" class="btn btn-primary"
+                  @click="testGatewayIPAddress(studio)"
+                >Connect</button>
+                <span class="p-2 m-1" id="gatewayStatus">.local addresses do not work over VPN</span>
+              </div>
+              <div class="col-2">
+                <a type="button" class="btn btn-primary"
+                  :href="machineScreenURL" target="gwMachineScreen"
+                >Machine screen</a>
+              </div>
+              <div class="col-1">
+                <a type="button" class="btn btn-primary"
+                  :href="'http://'+gatewayIPAddress+':9001'" target="gwSupervisor"
+                >Supervisor</a>
+              </div>
+            </div><!-- form-row -->
+            <div class="form-row">
+              <div class="form-group col">
+                <label for="studio_id">studio id</label>
+                <input type="text" size="20" id="studio_id" v-model="studioId">
+              </div>
+              <div class="form-group col">
+                <label for="studio_id">machine id</label>
+                <input type="text" size="20" id="machine_id" v-model="machineId">
+              </div>
+            </div><!-- form-row -->
+          </div><!-- container-fluid -->
+        </section>`,
+        'data': function(){return {
+          gatewayIPAddress: '192.168.x.y',
+          studioId: '',
+          memberId: '314159265',
+          machineId: ''
+        }}, // data
+        'computed': {
+          studio : function(){
+            return fit20.store.state.currentStudio;
+          },
+          usingHTTPS: function(){
+            return location.href.startsWith('https:');
+          },
+          machineScreenURL: function(){
+           return `http://${this.gatewayIPAddress}/fit20/ms.html?studio=${this.studioId}&machine=${this.machineId}&member=${this.memberId}&start=false&stop=false&restart=false`; 
+          }
+        }, // computed
+        'methods': {
+          testGatewayIPAddress: function(studio) {
+            fit20.log(`* testing gateway at ${this.gatewayIPAddress}`);
+            $('#gatewayStatus').removeClass('alert-danger').html('<i class="fa fa-rss fa-spin">searching...</i>');
+            studio.gatewayIPAddress = this.gatewayIPAddress;
+            fit20.sensors.connect(studio).
+              then(function(message) {
+                $('#gatewayStatus').removeClass('alert-danger').html($t(message));
+              }).
+              catch(function(message) {
+                $('#gatewayStatus').addClass('alert-danger').html($t(message));
+              });
+          }, // testGatewayIPAddress
+          setLocal: function(did, value) {
+            document.cookie = `${did}=${encodeURIComponent(value)}`;
+            this[did] = value;
+            this.$emit('set', did, value);
+            fit20.log(`Setting ${did} = ${value}`);
+            if (did == 'machineId') {
+              fit20.store.state.machines[value] = {id: value, longName: "Machine Name"};
+            }
+            if (did == 'studioId') {
+              fit20.store.state.currentStudio.id = value;
+            }
+            if (did == 'gatewayIPAddress') {
+              fit20.store.state.currentStudio.gatewayIPAddress = value;
+            }
+          }
+        }, // methods
+        'watch': {
+          gatewayIPAddress: function(gatewayIPAddress) {
+            this.setLocal('gatewayIPAddress', gatewayIPAddress);
+          },
+          studioId: function(studioId) {
+            this.setLocal('studioId', studioId);
+          },
+          machineId: function(machineId) {
+            this.setLocal('machineId', machineId);
+          }
+        }, // watch
+        'mounted': function() {
+          var scope = this;
+          // Read from the cookie.
+          var readCookie = function(cid) {
+            var stored = decodeURIComponent(document.cookie.replace(RegExp(`(?:(?:^|.*;\\s*)${cid}\\s*=\\s*([^;]*).*$)|^.*$`), '$1'));
+            if (stored) {
+              scope.setLocal(cid, stored);
+            }
+          };
+          readCookie('gatewayIPAddress');
+          readCookie('studioId');
+          readCookie('machineId');
+        } // mounted
+      });
+    
+      Vue.component('exercise', {
+        'template':
+        `<section id="exercise">
+          <h3>Exercise</h3>
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col">
+                <button type="button" class="btn btn-primary" @click="selectExercise">Select<br>(create)</button>
+              </div>
+              <div class="col">
+                <button type="button" class="btn" :class="{'btn-primary': isCalibrated[0], 'btn-danger': !isCalibrated[0]}" @click="calibrate(0)">
+                  <b class="fas fa-step-backward">|&lt;&lt;</b><br>{{calibration[0]}}
+                </button>
+                <button type="button" class="btn" :class="{'btn-primary': isCalibrated[1], 'btn-danger': !isCalibrated[1]}" @click="calibrate(1)">
+                  <b class="fas fa-step-forward">&gt;&gt;|</b><br>{{calibration[1]}}
+                </button>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-success" @click="startExercise">Start<br>&#xA0;</button>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-warning" @click="stationaryExercise">Stationary<br>(pause)</button>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-danger" @click="stopExercise">Stop<br>&#xA0;</button>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-info" @click="finishExercise">Done<br>(complete)</button>
+              </div>
+              <div class="col">
+              </div>
+            </div><!-- row -->
+            <div class="row" id = response>
+            </div><!-- row -->
+          </div><!-- container-fluid -->  
+          <div id="gwResponse"></div>
+          <div class="container-fluid border">
+            <div class="row" v-if="exerciseData.length">
+              <div class="col">count</div>
+              <div class="col">rep</div>
+              <div class="col">ref. pos.</div>
+              <div class="col">act. pos.</div>
+              <div class="col">tracking</div>
+              <div class="col"></div>
+            </div>
+            <div class="row my-0" v-for="data in exerciseData">
+              <template v-if="isNotResults(data)">
+                <div class="col my-0">{{ data.count }}</div>
+                <div class="col my-0">{{ data.repetition }}</div>
+                <div class="col my-0">{{ data.reference_position }}</div>
+                <div class="col my-0">{{ data.actual_position }}</div>
+                <div class="col my-0">{{ data.tracking }}</div>
+                <div class="col my-0">
+                <div class="progress my-1">
+                  <div class="progress-bar my-0" :style="'width:'+data.reference_bar+'%;'"></div>
+                </div>
+                <div class="progress my-1">
+                  <div class="progress-bar my-0 bg-danger" :style="'width:'+data.actual_bar+'%;'"></div>
+                </div>
+              </template>
+              <template v-else>
+                <div class="col">average {{ data.average }}</div>
+                <div class="col">metronome {{ data.metronome }}</div>
+                <div class="col">steady {{ data.steady }}</div>
+                <div class="col">range {{ data.range }}</div>
+              </template>
+            </div>
+          </div><!-- container-fluid -->
+        </section>`,
+        'props': ['studioId', 'machineId'],
+        'data': function(){return {
+          member: {id: 314159265, fullName: "Member Name", name: "Member Name"},
+          isCalibrated: [false, false],
+          calibration: ['-', '-'],
+          exerciseData: []
+        }}, // data
+        'computed': {
+          memberId: function(){return this.member.id;}
+        }, // computed
+        'methods': {
+          errorHandler: function(type, description) {
+            description = JSON.stringify(description);
+            var message = `${$t("M0916")} (${description})`;
+            fit20.log(`!! Closing sensor panel after error: ${description}`);
+          },
+          stateHandler: function(state) {
+            if (isDefined(state.isCalibrated)) {
+              this.isCalibrated = state.isCalibrated;
+            }
+            if (isDefined(state.calibration)) {
+              this.calibration = state.calibration;
+            }
+          },
+          dataHandler: function(data) {
+            if (this.exerciseData.length > 20) {
+              this.exerciseData.splice(0, this.exerciseData.length - 20);
+            }
+            this.exerciseData.push({
+              count: data.count,
+              actual_position: data.actual_position || 0,
+              reference_position: data.reference_position || 0,
+              tracking: data.tracking || 0,
+              repetition: data.repetition || 0,
+              reference_bar: Math.round((data.reference_position + 0.1) * 100 / 1.2),
+              actual_bar: Math.round((data.actual_position + 0.1) * 100 / 1.2)
+            })
+          },
+          resultHandler: function(results) {
+            if (isDefined(results.average)) {
+              ['average', 'metronome', 'steady', 'range'].forEach(function(qs) {
+                results[qs] = Math.round(results[qs]);
+              });
+              this.exerciseData.push(results);
+            }
+          },
+          isNotResults: function(data) {
+            return isUndefined(data.average);
+          },
+          afterRequest: function(caller) {
+            var scope = this;
+            return function(result){
+              $('#gwResponse')
+                .animate({fontSize: '20%'})
+                .text(`${caller}: ${$t(JSON.stringify(result))}`)
+                .animate({fontSize: '100%'});
+              fit20.log(`** Result of ${caller}: ${JSON.stringify(result)}`);
+              if (!fit20.sensors.active) {
+                fit20.log('** Re-activating sensor.');
+                fit20.sensors.active = true;
+                fit20.sensors_isensit.currentExercises[scope.memberId] = {};
+              }
+            };
+          },
+          selectExercise: function() {
+            var scope = this;
+            fit20.sensors.configureExercise(this.studioId, this.machineId, this.member, this.errorHandler, this.stateHandler, this.dataHandler, this.resultHandler).
+            then(this.afterRequest('selectExercise'), this.afterRequest('selectExercise'));
+          },
+          // X can be 0 (start position) or 1 (end position)
+          calibrate: function(x) {
+            fit20.log(`* Sensor calibrate ${JSON.stringify(x)}`);
+            fit20.sensors.calibrate(this.studioId, this.memberId, x).
+            catch(function(error){
+              fit20.log(`! calibrate failed: ${$t(error.message)}`);
+            })
+          },
+          startExercise: function() {
+            fit20.sensors.startExercise(this.studioId, this.memberId).
+            then(this.afterRequest('startExercise'), this.afterRequest('startExercise'));
+          },
+          stationaryExercise: function(){
+            fit20.sensors.stationaryExercise(this.studioId, this.memberId).
+            then(this.afterRequest('stationaryExercise'), this.afterRequest('stationaryExercise'));
+          },
+          stopExercise: function(){
+            fit20.sensors.stopExercise(this.studioId, this.memberId).
+            then(this.afterRequest('stopExercise'), this.afterRequest('stopExercise'));
+          },
+          finishExercise: function() {
+            fit20.sensors.finishExercise(this.studioId, this.memberId).
+            then(this.afterRequest('finishExercise'), this.afterRequest('finishExercise'));
+          } // finishExercise
+        }, // methods
+        'watch': {
+        }, // watch
+        'mounted': function() {
+        } // mounted
+      });
+      
+    }); // readyToGo
+  </script>
+      
+  <script type="text/javascript">
+    readyToGo.then(function() {
+    
+      new Vue({
+        el: '#main',
+        template: `
+          <main>
+            <gateway @set="setData"></gateway>
+            <exercise :studioId="studioId" :machineId="machineId"></exercise>
+          </main>
+        `,
+        data: {
+          gatewayIPAddress : '',
+          studioId: '',
+          machineId: ''
+        },
+        computed: {
+        },
+        methods: {
+          setData: function(did, value) {
+            this[did] = value;
+          }
+        }
+      });
+      
+    }); // readyToGo
+    
+    window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
+      fit20.log("!!Error : " + $t(errorMsg));
+      return false;
+    }
+  </script>
+  
+  <p>Open the developer console in your browser to see what is happening.</p>
+  <p>When a library has changed, do Shift-Reload to bypass the browser cache.</p>
+
+  </body>
+</html>

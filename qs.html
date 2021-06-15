@@ -1,0 +1,33 @@
+<html>
+<head>
+  <title>Test QS</title>
+  
+  <script src="../v4web/js/app/sensors/qs.js"></script>
+  
+  <style type="text/css">
+    textarea {
+      display: block;
+      width: 100%;
+    }
+  </style>
+  
+  <script type="text/javascript">
+    function analyzeMeasurements() {
+      const measurements = JSON.parse(document.getElementById('measurements-input').value);
+      const reversalIndexes = qs.calculateReversalIndexes(measurements);
+      const reversalInfo = reversalIndexes.map(ti => {
+        return `index: ${ti}, time: ${measurements[ti].time}`;
+      });
+      document.getElementById('reversalIndexes').innerHTML = reversalInfo.map(info => `<div>${info}</div>`).join('\n');
+    }
+  </script>
+</head>
+<body>
+
+  <label for="measurements-input">Paste the measurements below.</label>
+  <textarea id="measurements-input"></textarea>
+  <button onclick="analyzeMeasurements()">Analyze</button>
+  <p id="reversalIndexes"></p>
+
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>BLE-TEST</title>
+    <style>
+      canvas {
+        max-height: 400px;
+      }
+      #int8 {
+        color: rgb(0, 145, 0);
+      }
+      #unit8-index0 {
+        color: rgba(0, 204, 255);
+      }
+      #unit8-index1 {
+        color: rgba(153, 102, 255);
+      }
+      #unit16 {
+        color: rgba(0, 102, 255);
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.js"></script>
+  </head>
+  <body>
+    <h1>BLE test app</h1>
+    <div>
+      <button id="connect" onclick="connect()">scan &amp; connect</button>
+      <button id="disconnect" onclick="disconnect()" disabled>disconnect</button>
+    </div>
+    <p>Device: <span id="device-name"></span> <span id="device-state"></span></p>
+    <p>
+      Services:
+      <ul id="bleServices"></ul>
+    </p>
+    <p>
+      Custom characteristics:
+      <ul id="customCharacteristics"></ul>
+    </p>
+
+    <h2>sensor</h2>
+    <canvas id="myChart" width="400" height="400"></canvas>
+    
+    <script type="text/javascript">
+      const serviceUuids = {
+        'device information' : '0000180a-0000-1000-8000-00805f9b34fb',
+        'generic access' :     '00001800-0000-1000-8000-00805f9b34fb',
+        'generic attribute' :  '00001801-0000-1000-8000-00805f9b34fb',
+        'custom service' :     '0000fff0-0000-1000-8000-00805f9b34fb'
+      };
+      
+      // Variables accessible from console.
+      let bluetoothDevice, bleGattServer, customService, customCharacteristics, sensorCharacteristic, showGraphForUuid;
+      
+      if (typeof(navigator.bluetooth) == "undefined") {
+        console.error('Web Bluetooth is not available.');
+        window.alert('Web Bluetooth is not available. Try another browser.');
+      }
+
+      const connect = async () => {
+        try {
+          let options = {
+              // acceptAllDevices: true,
+              filters: [{ namePrefix: 'EC' }],
+              optionalServices: [serviceUuids['custom service']],
+            };
+          $('#device-state').html('scanning');
+          bluetoothDevice = await navigator.bluetooth.requestDevice(options);
+          $('#device-name').html(`${bluetoothDevice.name} `);
+          await connectToCustomService();
+          showCustomCharacteristics();
+        } catch (err) {
+          console.error(err);
+        }
+      }; // connect
+
+      const disconnect = async () => {
+        try {
+          showGraphForUuid = undefined;
+          await bluetoothDevice.gatt.disconnect();
+          document.getElementById('disconnect').disabled = true;
+          document.getElementById('connect').disabled = false;
+          $('#device-state').html('disconnected');
+          $('#bleServices').empty();
+          $('#customCharacteristics').empty();
+        } catch (err) {
+          console.error(err);
+        }
+      };
+            
+      const connectToCustomService = async () => {
+        try {
+          $('#device-state').html('connecting');
+          await bluetoothDevice.gatt.connect();
+          $('#device-state').html('connected');
+          $('#device-state').html('connecting to service');
+          let gattServices = await bluetoothDevice.gatt.getPrimaryServices();
+          gattServices.forEach((srvc) => {
+            let name = Object.entries(serviceUuids).find(entry => entry[1] == srvc.uuid)[0];
+            $('#bleServices').append(`
+                <li><tt>${srvc.uuid}</tt> ${name}</li>
+            `);
+          }); // forEach
+          customService = await bluetoothDevice.gatt.getPrimaryService(serviceUuids['custom service']);
+          customCharacteristics = await customService.getCharacteristics();
+          $('#device-state').html('connected');
+        } catch (err) {
+          console.error(err);
+        }
+      }; // connectToCustomService
+        
+      const showCustomCharacteristics = () => {
+        try {
+          $('#device-state').html('connecting to characteristics');
+          // https://devzone.nordicsemi.com/nordic/short-range-guides/b/bluetooth-low-energy/posts/ble-characteristics-a-beginners-tutorial
+          customCharacteristics.forEach(async (characteristic) => {
+            let props = [
+              (characteristic.properties.reliableWrite ? 'W' : '_'),
+              (characteristic.properties.writableAuxiliaries ? 'X' : '_'),
+              (characteristic.properties.authenticatedSignedWrites ? 'S' : '_'),
+              (characteristic.properties.indicate ? 'i' : '_'),
+              (characteristic.properties.notify ? 'n' : '_'),
+              (characteristic.properties.write ? 'w' : '_'),
+              (characteristic.properties.writeWithoutResponse ? 'W' : '_'),
+              (characteristic.properties.read ? 'r' : '_'),
+              (characteristic.properties.broadcast ? 'b' : '_')
+            ].join('');
+            $('#customCharacteristics').append(`
+                <li><tt>[${props}]</tt> ${characteristic.uuid}:
+                  <span id="value_${characteristic.uuid}"></span>
+                  <span id="extra_${characteristic.uuid}"></span>
+                </li>
+            `);
+            
+            if (characteristic.properties.read) {
+              let value = await characteristic.readValue().catch(e => e);
+              $(`#value_${characteristic.uuid}`).text(viewData(value));
+            }
+            
+            if (characteristic.properties.notify) {
+              characteristic.addEventListener('characteristicvaluechanged', (event) => {
+                let value = event.target.value;
+                $(`#value_${characteristic.uuid}`).text(viewData(value));
+                if (characteristic.uuid == showGraphForUuid) {
+                  sensorCharacteristicChangedValue(value);
+                }
+              });
+              characteristic.startNotifications();
+              $(`#value_${characteristic.uuid}`).text('⌛');
+              $(`#extra_${characteristic.uuid}`).html(`<button onclick="showgraph('${characteristic.uuid}')">&#x1f4c8;</button>`);
+            }
+            
+            if (characteristic.properties.write) {
+              $(`#extra_${characteristic.uuid}`).html(`
+                  <input type="text" onchange="writeTo('${characteristic.uuid}')" title="JSON string without quotes"></input>
+                `);
+            }
+          }); // forEach
+          document.getElementById('connect').disabled = true;
+          document.getElementById('disconnect').disabled = false;
+          $('#device-state').html('connected');
+        } catch (err) {
+          console.error(err);
+        }
+      }; // showCustomCharacteristics
+      
+      const viewData = (value) => {
+        let bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+        return `[${Array.from(bytes).map(b => b.toString(16)).map(b => b.length < 2 ? '0'+b : b).join('.')}]`;
+      }; //viewData
+      
+      let chartX, timeMs;
+      const showgraph = (uuid) => {
+        if (showGraphForUuid == uuid) {
+          showGraphForUuid = undefined;
+        } else {
+          chartX = 0;
+          timeMs = Date.now();
+          showGraphForUuid = uuid;
+        }
+      }; // showgraph
+      
+      const writeTo = async (uuid) => {
+        let value = JSON.parse(`"${event.target.value}"`);
+        event.stopPropagation();
+        if (!bluetoothDevice.gatt.connected) {
+          console.warn('reconnecting to device');
+          await connectToCustomService();
+        }
+        let characteristic = customCharacteristics.find(c => c.uuid == uuid);
+        let buffer = new TextEncoder().encode(value)
+        characteristic.writeValue(buffer).
+          then(() => console.info(`wrote ${JSON.stringify(value)} to ${uuid}`)).
+          catch(ex => console.error(ex));
+      }; // writeTo
+
+      const sensorCharacteristicChangedValue = (value) => {
+        let now = Date.now();
+        let reading =  (value.byteLength == 3) ? value.getUint16() : (value.byteLength == 2) ? value.getUint16() : value.getUint8();
+        myChart.data.labels.push(++chartX);
+        myChart.data.datasets[0].data.push(reading);
+        myChart.data.datasets[1].data.push(now- timeMs);
+        if (myChart.data.labels.length == 250) {
+          myChart.data.labels.shift();
+          myChart.data.datasets[0].data.shift();
+          myChart.data.datasets[1].data.shift();
+        }
+        myChart.update();
+        timeMs = now;
+      }; // sensorCharacteristicChangedValue
+
+      const ctx = document.getElementById('myChart');
+      const myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [1],
+          datasets: [
+            {
+              label: 'reading',
+              backgroundColor: 'transparent',
+              borderColor: 'rgb(0, 145, 0)',
+              data: [],
+            },
+            {
+              label: 'interval (ms)',
+              backgroundColor: 'transparent',
+              borderColor: 'rgb(145, 0, 0)',
+              data: [],
+            }
+          ],
+        },
+        options: {
+          scales: {
+            xAxes: [
+              {
+                gridLines: {
+                  display: false,
+                  drawBorder: false,
+                },
+                ticks: {
+                  autoSkip: true,
+                  minTicksLimit: 3,
+                  maxTicksLimit: 10,
+                  minRotation: 55,
+                },
+              },
+            ],
+            yAxes: [
+              {
+                ticks: {
+                  beginAtZero: true,
+                  stepSize: 1,
+                },
+              }
+            ],
+          },
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: {
+            display: true,
+            position: 'bottom',
+          },
+          elements: {
+            point: {
+              radius: 1.8,
+              hoverRadius: 6,
+              hoverBorderWidth: 10,
+            },
+          },
+          animation: {duration: 0}
+        },
+      });
+    </script>
+  </body>
+</html>

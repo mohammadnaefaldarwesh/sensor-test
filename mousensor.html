@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <link href="c3/c3.css" rel="stylesheet">
+    <script src="c3/jquery-1.11.0.min.js"></script>
+    <script src="c3/d3-5.4.0.min.js" charset="utf-8"></script>
+    <script src="c3/c3.min.js"></script>
+    <script src="socket.io.js"></script>
+    <style type="text/css">
+      section {
+        margin: 1ex;
+        border: 1px #444;
+      }
+      div {
+        margin: 1ex;
+      }
+      .response {
+        white-space: pre-line;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+  
+    <ul style="display: none">
+      <li>https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API</li>
+      <li>https://developer.android.com/reference/android/view/SurfaceView</li>
+      <li>https://developer.android.com/training/gestures/movement</li>
+      <li>https://www.androidpolice.com/2017/05/18/android-o-feature-spotlight-apps-can-finally-capture-mouse-pointer/</li>
+      <li></li>
+    </ul>
+
+    <section>
+      <h3>position: <span id="currentPosition"></span></h3>
+      <div>
+        <table>
+          <tr>
+            <td><label for="points">Points:</label></td>
+            <td><input type="number" id="points" value="50" /></td>
+            <td><button onclick="startRunning()">START</button></td>
+          </tr>
+          <tr>
+            <td><label for="xy">Measure:</label></td>
+            <td><input type="radio" name="xy" value="x" />X  <input type="radio" name="xy" value="y" checked="checked" />Y</td>
+            <td><button onclick="stopRunning()">STOP</button></td>
+          </tr>
+        </table>
+      </div>
+      <div id="chart" class="c3"></div>
+      <script type="text/javascript">
+        var running = false;
+        var startNow = 0;
+        var xTimes = [];
+        var yPos = [];
+        var yMin = -1;
+        var yMax = 1;
+        var mouseElement = document.getElementById('currentPosition');
+        mouseElement.requestPointerLock = mouseElement.requestPointerLock || mouseElement.webkitRequestPointerLock;
+        document.exitPointerLock = document.exitPointerLock || document.webkitExitPointerLock;
+        var position = 0;
+
+        function startRunning() {
+          running = true;
+          startNow = Date.now();
+          xTimes = [];
+          yPos = [];
+          yMin = -100;
+          yMax = 100;
+          mouseElement.requestPointerLock();
+          position = 0;
+          onmousemove = plot; 
+        }
+
+        function stopRunning() {
+          running = false;
+          onmousemove = undefined;
+          document.exitPointerLock();
+        }
+
+        var chart = c3.generate({
+          bindto: "#chart",
+          transition: { duration: 0 },
+          data: { x: 'x', columns: [] },
+          axis: {
+            y: {min: yMin, max: yMax}
+          }
+        });
+
+        function plot(mouse) {
+          mouse.preventDefault();
+          mouse.stopImmediatePropagation();
+          mouse.stopPropagation();
+          var now = Date.now()
+          position += $('input[name=xy]:checked').val() == 'x' ? mouse.movementX : mouse.movementY;
+          $('#currentPosition').text(position);
+          xTimes.push((now-startNow) / 1000);
+          var y = position;
+          yPos.push(y);
+          if (y < yMin) {
+            yMin = y;
+            chart.axis.min(y);
+          }
+          if (y > yMax) {
+            yMax = y;
+            chart.axis.max(y);
+          }
+          var nrPoints = Number($('#points').val());
+          while (xTimes.length > nrPoints) {
+            xTimes.shift();
+            yPos.shift();
+          }
+          chart.load({
+            columns : [ [ 'x' ].concat(xTimes), [ 'position' ].concat(yPos) ]
+          });
+        }
+      </script>
+    </section>
+
+  </body>
+</html>

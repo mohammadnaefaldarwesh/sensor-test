@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AnSeDi: Android Sensor Discovery</title>
+    <style>
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script type="text/javascript">
+      function showAndroidSensors() {
+        $('#list').html('Searching...');
+        let androidLocalAddresses = ['Android.local'].concat([1,2,3,4,5,6,7,8,9].map(n => `Android-${n}.local`));
+        let requests = androidLocalAddresses.map(host => ({host: host, ajax: $.ajax(`http://${host}:1064/identify`, {
+          dataType: 'json',
+          timeout: 20000
+        })}));
+        let promises = requests.map(req =>
+            new Promise((resolve, reject) => {
+              req.ajax.
+              done((result, status, jqXHR)  => resolve({host: req.host, result: result, status: status, jqXHR: jqXHR})).
+              fail((jqXHR, status, error) => reject({host: req.host, error: error, status: status, jqXHR: jqXHR}));
+            }) // promise
+        ); // requests map
+        Promise.allSettled(promises).
+        then(results => {
+          return (
+              results.filter(result => result.status == 'fulfilled').
+              map(result => ({host: result.value.host, machine: result.value.result}))
+            );
+        }).
+        then(sensors => {
+          $('#list').html('');
+          sensors.forEach(sensor =>
+            $('#list').append(`<div>${JSON.stringify(sensor)}</div>`)
+          )
+        }).
+        catch(error => {
+          console.info('error!');
+          console.error(error);
+        });
+      }
+    </script>
+  </head>
+  <body>
+  <p>
+  This web app discovers Android sensors tablets by scanning for Android.local addresses that support the GET /identify web service.
+  </p>
+  <p>
+  DNS-SD must be active on the tablets, otherwise the Android.local names will not be used.
+  </p>
+  <p>
+    <button onclick=" showAndroidSensors()">Find sensors</button>
+  </p>
+  <div id="list">
+  </div>
+  </body>
+</html>

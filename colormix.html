@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script src="c3/jquery-1.11.0.min.js"></script>
+    <style type="text/css">
+      div {
+        margin: 1ex;
+      }
+      td {
+        border-right: 1px solid white;
+      }
+      #refbar, #unrefbar {
+        display: inline-block;
+        margin: 0;
+        height: 3em;
+        width: 50ex;
+      }
+      #refbar {
+        background: #777;
+      }
+      #unrefbar {
+        background: #DDD;
+      }
+      #movingbar {
+        height: 3em;
+        transition: background .2s linear;
+      }
+      
+      .table-editable {
+        position: relative;
+      }
+      .table-editable td {
+        padding: 0.2ex 1ex;
+        border: 1px solid #777;
+      }
+      .table-remove {
+        color: #700;
+        font-size: 20px;
+        cursor: pointer;
+      }
+      .table-remove:hover {
+        color: #f00;
+        font-size: 20px;
+      }
+      .table-up, .table-down {
+        color: #007;
+        font-size: 20px;
+        cursor: pointer;
+      }
+      .table-up:hover, .table-down:hover {
+        color: #00f;
+        font-size: 20px;
+      }
+      .table-add {
+        color: #070;
+        font-size: 20px;
+        cursor: pointer;
+      }
+      .table-add:hover {
+        color: #0b0;
+        font-size: 20px;
+      }
+      .hide {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <table cellspacing="0">
+        <tr id="colorbar"></tr>
+        <tr id="tracking"></tr>
+      </table>
+    </div>
+    
+    <div><div id="refbar">&#xA0;</div><div id="unrefbar">&#xA0;</div></div>
+    <div id="movingbar">&#xA0;</div>
+    
+    <h4>Color scheme (tracking must be sorted)</h4>
+    <div id="table" class="table-editable">
+      <table class="table">
+        <tr>
+          <th>tracking</th>
+          <th>color</th>
+        </tr>
+        <!-- This is our clonable table line -->
+        <tr class="hide">
+          <td contenteditable="true">0.0</td>
+          <td contenteditable="true">#</td>
+          <td>
+            <span class="table-remove" title="remove">&#x2716;</span>
+          </td>
+          <td>
+            <span class="table-up" title="move up">&#x21A5;</span>
+          </td>
+          <td>
+            <span class="table-down" title="move down">&#x21A7;</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div><button class="table-add" title="add">+</button></div>
+    <div><button id="export-btn" class="btn btn-primary">Use this color scheme</button></div>
+    <p id="export"></p>
+
+    <script type="text/javascript">
+      var defaultColorScheme = [
+        { tracking: 0.05, color: '#92D400' },
+        { tracking: 0.07, color: '#DDDD00' },
+        { tracking: 0.10, color: '#EECC00' },
+        { tracking: 0.13, color: '#FF9900' },
+        { tracking: 0.20, color: '#EE5500' } ];
+      
+      // jQuery anumate colors
+      $.each(["backgroundColor","borderBottomColor","borderLeftColor","borderRightColor","borderTopColor","borderColor","color","outlineColor"],function(b,a){$.fx.step[a]=function(c){if(!c.colorInit){c.start=getColor(c.elem,a);c.end=getRGB(c.end);c.colorInit=true}c.elem.style[a]="rgb("+Math.max(Math.min(parseInt((c.pos*(c.end[0]-c.start[0]))+c.start[0],10),255),0)+","+Math.max(Math.min(parseInt((c.pos*(c.end[1]-c.start[1]))+c.start[1],10),255),0)+","+Math.max(Math.min(parseInt((c.pos*(c.end[2]-c.start[2]))+c.start[2],10),255),0)+")"}});function getRGB(b){var a;if(b&&b.constructor==Array&&b.length==3){return b}if(a=/rgb\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)/.exec(b)){return[parseInt(a[1],10),parseInt(a[2],10),parseInt(a[3],10)]}if(a=/rgb\(\s*([0-9]+(?:\.[0-9]+)?)\%\s*,\s*([0-9]+(?:\.[0-9]+)?)\%\s*,\s*([0-9]+(?:\.[0-9]+)?)\%\s*\)/.exec(b)){return[parseFloat(a[1])*2.55,parseFloat(a[2])*2.55,parseFloat(a[3])*2.55]}if(a=/#([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})/.exec(b)){return[parseInt(a[1],16),parseInt(a[2],16),parseInt(a[3],16)]}if(a=/#([a-fA-F0-9])([a-fA-F0-9])([a-fA-F0-9])/.exec(b)){return[parseInt(a[1]+a[1],16),parseInt(a[2]+a[2],16),parseInt(a[3]+a[3],16)]}if(a=/rgba\(0, 0, 0, 0\)/.exec(b)){return colors.transparent}return colors[$.trim(b).toLowerCase()]}function getColor(c,a){var b;do{b=$.curCSS(c,a);if(b!=""&&b!="transparent"||$.nodeName(c,"body")){break}a="backgroundColor"}while(c=c.parentNode);return getRGB(b)};
+  
+      /**
+       * Compute the actual bar color.
+       */
+      function trackingColor(tracking, colorScheme) {
+        var csAboveIdx = colorScheme.findIndex(cs => cs.tracking > tracking);
+        if (csAboveIdx == 0) {
+          return colorScheme[0].color;
+        }
+        if (csAboveIdx < 0) {
+          return colorScheme[colorScheme.length-1].color
+        }
+        var csBelowIdx = csAboveIdx - 1;
+        var csAbove = colorScheme[csAboveIdx];
+        var csBelow = colorScheme[csBelowIdx];
+        var mixFactor = (tracking - csBelow.tracking) /
+                        (csAbove.tracking -  csBelow.tracking);
+        var palette = [{color: csBelow.color, weight: 1 - mixFactor},
+                       {color: csAbove.color, weight: mixFactor}];
+        var colorMix = {r: 0.0, g: 0.0, b: 0.0};
+        var totalWeight = 0.0;
+        // Parse each of the colors into r, g, b, and sum them.
+        for (var plt of palette) {
+          colorMix.r += parseInt(plt.color.substr(1, 2), 16) * plt.weight;
+          colorMix.g += parseInt(plt.color.substr(3, 2), 16) * plt.weight;
+          colorMix.b += parseInt(plt.color.substr(5, 2), 16) * plt.weight;
+          totalWeight += plt.weight;
+        }
+        // Compute 2-digit hex codes.
+        var hex2 = num => {
+          var s = Math.round(num).toString(16);
+          return s.length == 0 ? '00' : s.length == 1 ? '0'+s : s;
+        };
+        // Take weighted average and turn into hex.
+        var rgbMix = hex2(colorMix.r / totalWeight) +
+                     hex2(colorMix.g / totalWeight) +
+                     hex2(colorMix.b / totalWeight);
+        return '#'+rgbMix;
+      }
+    </script>
+    
+    <script type="text/javascript">
+      function initStaticScale() {
+        $('#colorbar').empty();
+        $('#tracking').empty();
+        for (var tracking100 = 0; tracking100 < 100; ++tracking100) {
+          var color = trackingColor(tracking100 / 400, defaultColorScheme);
+          $('#colorbar').append(`<td title="${color}" style="background:${color};">&#xA0;</td>`);
+          if (tracking100 % 20 == 0) {
+            $('#tracking').append(`<td colspan="20">${tracking100 / 400}</td>`);
+          }
+        }
+      }
+      var actualPos100 = 0;
+      var interval = 200;
+      setInterval(function(){
+        var foldedPos = (actualPos100 < 25) ? (50 - actualPos100) : (actualPos100 >= 75) ? (150 - actualPos100) : actualPos100;
+        var actualColor = trackingColor(Math.abs(foldedPos - 50)/100, defaultColorScheme);
+        $('#movingbar').animate({width: `${foldedPos}ex`}, interval, 'linear', function(){
+          $('#movingbar').css({backgroundColor: `${actualColor}`}); 
+        });
+        actualPos100 = (actualPos100 + 1) % 100;
+      }, interval);
+    </script>
+    
+    <script type="text/javascript">
+      // table editor
+      var $TABLE = $('#table');
+      var $BTN = $('#export-btn');
+      var $EXPORT = $('#export');
+  
+      $('.table-add').click(function () {
+        var $clone = $TABLE.find('tr.hide').clone(true).removeClass('hide');
+        $TABLE.find('table').append($clone);
+      });
+  
+      $('.table-remove').click(function () {
+        $(this).parents('tr').detach();
+      });
+  
+      $('.table-up').click(function () {
+        var $row = $(this).parents('tr');
+        if ($row.index() === 1) return; // Don't go above the header
+        $row.prev().before($row.get(0));
+      });
+  
+      $('.table-down').click(function () {
+        var $row = $(this).parents('tr');
+        $row.next().after($row.get(0));
+      });
+  
+      // A few jQuery helpers for exporting only
+      jQuery.fn.pop = [].pop;
+      jQuery.fn.shift = [].shift;
+  
+      $BTN.click(function () {
+        var $rows = $TABLE.find('tr:not(:hidden)');
+        var headers = [];
+        var data = [];
+        
+        // Get the headers (add special header logic here)
+        $($rows.shift()).find('th:not(:empty)').each(function () {
+          headers.push($(this).text().toLowerCase());
+        });
+        
+        // Turn all existing rows into a loopable array
+        $rows.each(function () {
+          var $td = $(this).find('td');
+          var h = {};
+          
+          // Use the headers from earlier to name our hash keys
+          headers.forEach(function (header, i) {
+            h[header] = $td.eq(i).text();   
+          });
+          
+          data.push(h);
+        });
+        
+        // Output the result
+        //$EXPORT.text(JSON.stringify(data));
+        
+        // Make the color table
+        defaultColorScheme = data;
+        initStaticScale();
+      });
+      
+      // Initialize table
+      defaultColorScheme.forEach(function(tracolor) {
+        var $clone = $TABLE.find('tr.hide').clone(true).removeClass('hide');
+        $clone.find('td').eq(0).text(tracolor.tracking);
+        $clone.find('td').eq(1).text(tracolor.color);
+        $TABLE.find('table').append($clone);
+      });
+      initStaticScale();
+    </script>
+  </body>
+</html>

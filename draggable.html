@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <meta charset="UTF-8"> 
+<head>
+  <title>draggable test</title>
+  
+  <link rel="stylesheet" type="text/css" href="/v4web/css/fit20-admin.css">
+  
+  <script src="/v4web/js/vendors/vue.js"></script>
+  <script src="/v4web/js/vendors/vuex.min.js"></script>
+  <script src="/v4web/js/vendors/jquery-3.1.1.min.js"></script>
+  <script src="/v4web/js/vendors/tether.min.js"></script>
+  <script src="/v4web/js/vendors/bootstrap.min.js"></script>
+  <script src="/v4web/js/vendors/sortable.min.js"></script>
+  <script src="/v4web/js/vendors/vuedraggable.min.js"></script>
+
+</head>
+
+<body>
+  <div id="app">
+  
+    <div style="margin: 2em;" v-for="brand in Object.keys(machines)">
+      <h3>{{ brand }}</h3>
+      <draggable v-model="machines[brand]" style="margin: 2em;">
+        <div class="alert alert-primary" v-for="machine in machines[brand]">{{ machine.name }}</div>
+      </draggable>
+    </div>
+    
+    <button @click="reset">RESET</button>
+  </div><!-- #app -->
+
+  <script type="text/javascript">
+  var vue = new Vue({
+    el: '#app',
+    data: {
+      machines: {}
+    }, // data
+    methods: {
+      reset: function() {
+        this.machines = {
+          'Nautilus': [
+              {name: 'aa', sortOrder: 0},
+              {name: 'bb', sortOrder: 0},
+              {name: 'cc', sortOrder: 0},
+              {name: 'dd', sortOrder: 0}
+            ],
+          'Nautilus Evo' : [
+              {name: 'pp', sortOrder: 0},
+              {name: 'qq', sortOrder: 0},
+              {name: 'rr', sortOrder: 0}
+            ]
+        };
+      } // reset
+    }
+  });
+  </script>
+</body>
+
+</html>
