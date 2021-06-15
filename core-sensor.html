@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="UTF-8">
-    <link href="c3/c3.css" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <link href="c3/c3.css" rel="stylesheet" />
     <script src="c3/jquery-1.11.0.min.js"></script>
     <script src="c3/d3-5.4.0.min.js" charset="utf-8"></script>
     <script src="c3/c3.min.js"></script>
     <script src="socket.io.js"></script>
-    <script src="../v4web/js/app/sensors/qs.js"></script>
-    <script type="text/javascript">var fit20 = {};</script>
+    <script src="v4web/js/app/sensors/qs.js"></script>
+    <script type="text/javascript">
+      var fit20 = {};
+    </script>
     <style type="text/css">
       section {
         margin: 1ex;
@@ -17,14 +19,15 @@
       div {
         margin: 1ex;
       }
-      label, input {
+      label,
+      input {
         margin: 0.6ex 0.3ex;
       }
-      input[type=range] {
+      input[type='range'] {
         vertical-align: top;
       }
       table tr td {
-        padding-right:20px;
+        padding-right: 20px;
       }
       .response {
         white-space: pre-line;
@@ -33,80 +36,91 @@
     </style>
   </head>
   <body>
-    <section style="float:right;">
+    <section style="float: right">
       <video id="webcam" autoplay="true"></video>
       <script type="text/javascript">
         function showVideo() {
           var mediaOptions = { audio: false, video: true };
           if (!navigator.getUserMedia) {
-              navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+            navigator.getUserMedia =
+              navigator.getUserMedia ||
+              navigator.webkitGetUserMedia ||
+              navigator.mozGetUserMedia ||
+              navigator.msGetUserMedia;
           }
-          if (!navigator.getUserMedia){
+          if (!navigator.getUserMedia) {
             return alert('getUserMedia not supported in this browser.');
           }
-          navigator.getUserMedia(mediaOptions,
-            function(stream){
-              var video = document.querySelector("#webcam");
+          navigator.getUserMedia(
+            mediaOptions,
+            function (stream) {
+              var video = document.querySelector('#webcam');
               video.srcObject = stream;
             },
-            function(e) {
+            function (e) {
               console.log(e);
-            }
+            },
           );
           $('#showVideo').hide();
         }
       </script>
       <div><button id="showVideo" onclick="showVideo()">Open camera (for tablet view)</button></div>
     </section>
-  
+
     <section>
       <h3>sensor / tablet server</h3>
       <div>
         <label for="sensorIP">IP address:</label>
-        <input type="text" id="sensorIP" value="192.168.0.0" onchange="rememberSensorIP()"/>
+        <input type="text" id="sensorIP" value="192.168.0.0" onchange="rememberSensorIP()" />
         <label for="sensorPort">API server port:</label>
-        <input type="text" id="sensorPort" value="1064" onchange="rememberSensorPort()"/>
-        <br/>
+        <input type="text" id="sensorPort" value="1064" onchange="rememberSensorPort()" />
+        <br />
         <label for="webSocketPort">WebSocket port:</label>
-        <input type="text" id="webSocketPort" value="1064" onchange="rememberWebSocketPort()"/>
+        <input type="text" id="webSocketPort" value="1064" onchange="rememberWebSocketPort()" />
         <label for="webSocketUrl">WebSocket URL:</label>
-        <span>/</span><input type="text" id="webSocketUrl" value="exercise/data" onchange="rememberWebSocketUrl()"/>
+        <span>/</span
+        ><input
+          type="text"
+          id="webSocketUrl"
+          value="exercise/data"
+          onchange="rememberWebSocketUrl()"
+        />
       </div>
       <script type="text/javascript">
         function isUndefined(obj) {
           return typeof obj == 'undefined' || obj == null;
         }
 
-        function sensorServerIP() { 
-          return $('#sensorIP').val(); 
+        function sensorServerIP() {
+          return $('#sensorIP').val();
         }
-        function sensorServerPort() { 
-          return $('#sensorPort').val(); 
+        function sensorServerPort() {
+          return $('#sensorPort').val();
         }
-        function webSocketUrl() { 
-          return $('#webSocketUrl').val(); 
+        function webSocketUrl() {
+          return $('#webSocketUrl').val();
         }
-        function webSocketPort() { 
-          return $('#webSocketPort').val(); 
+        function webSocketPort() {
+          return $('#webSocketPort').val();
         }
-        
+
         function rememberSensorIP() {
-          document.cookie = "sensorIP=" + encodeURIComponent(sensorServerIP());
+          document.cookie = 'sensorIP=' + encodeURIComponent(sensorServerIP());
         }
         function rememberSensorPort() {
-          document.cookie = "sensorPort=" + encodeURIComponent(sensorServerPort());
+          document.cookie = 'sensorPort=' + encodeURIComponent(sensorServerPort());
         }
         function rememberWebSocketUrl() {
-          document.cookie = "webSocketUrl=" + encodeURIComponent(webSocketUrl());
+          document.cookie = 'webSocketUrl=' + encodeURIComponent(webSocketUrl());
         }
         function rememberWebSocketPort() {
-          document.cookie = "webSocketPort=" + encodeURIComponent(webSocketPort());
+          document.cookie = 'webSocketPort=' + encodeURIComponent(webSocketPort());
         }
 
         // Read the sensor IP, port, etcetera from the cookie.
         function cookieValueInto(name, $element) {
           var regex = new RegExp(`(?:(?:^|.*;\\s*)${name}\\s*\\=\\s*([^;]*).*$)|^.*$`);
-          var value = decodeURIComponent(document.cookie.replace(regex, "$1"));
+          var value = decodeURIComponent(document.cookie.replace(regex, '$1'));
           if (value) {
             $element.val(value);
           }
@@ -115,16 +129,21 @@
         cookieValueInto('sensorPort', $('#sensorPort'));
         cookieValueInto('webSocketUrl', $('#webSocketUrl'));
         cookieValueInto('webSocketPort', $('#webSocketPort'));
-        
+
         function showError(jqXHR, textStatus, errorThrown, url) {
-          if (jqXHR.status == 0 && errorThrown == '') errorThrown = "not connected";
-          console.error(`Error for  ${url}  ${textStatus}: ${jqXHR.status} ${errorThrown} ${jqXHR.responseText}`);
+          if (jqXHR.status == 0 && errorThrown == '') errorThrown = 'not connected';
+          console.error(
+            `Error for  ${url}  ${textStatus}: ${jqXHR.status} ${errorThrown} ${jqXHR.responseText}`,
+          );
         }
       </script>
     </section>
 
     <section>
-      <h3>position: <span id="currentPosition">unknown</span>; sensor reading: <span id="currentReading">unknown</span></h3>
+      <h3>
+        position: <span id="currentPosition">unknown</span>; sensor reading:
+        <span id="currentReading">unknown</span>
+      </h3>
       <div>
         <table>
           <tr>
@@ -140,7 +159,7 @@
           </tr>
         </table>
       </div>
-      <div id="position_chart" class="c3" style="display: none;"></div>
+      <div id="position_chart" class="c3" style="display: none"></div>
       <script type="text/javascript">
         var running = false;
         var startNow = Date.now();
@@ -153,12 +172,12 @@
 
         function startRunning() {
           position_chart = c3.generate({
-            bindto: "#chart",
+            bindto: '#chart',
             transition: { duration: 0 },
             data: { x: 'x', columns: [] },
             axis: {
-              y: {min: yMin, max: yMax}
-            }
+              y: { min: yMin, max: yMax },
+            },
           });
           running = true;
           startNow = Date.now();
@@ -176,50 +195,57 @@
 
         function plot() {
           $.ajax({
-            url : `http://${sensorServerIP()}:${sensorServerPort()}/position`,
-            dataType : 'json'
-          }).done(function(data) {
-            var now = Date.now()
-            xTimes.push((now-startNow) / 1000);
-            // sensor position
-            var y = data.position;
-            $('#currentPosition').text(y);
-            yPos.push(y);
-            if (y < yMin) {
-              yMin = y;
-              position_chart.axis.min(y);
-            }
-            if (y > yMax) {
-              yMax = y;
-              position_chart.axis.max(y);
-            }
-            // sensor reading
-            y = data.hasOwnProperty('sensor_reading') ? data.sensor_reading : data.sensor_position;
-            $('#currentReading').text(y);
-            yRdg.push(y);
-            if (y < yMin) {
-              yMin = y;
-              position_chart.axis.min(y);
-            }
-            if (y > yMax) {
-              yMax = y;
-              position_chart.axis.max(y);
-            }
-            // plotting
-            var nrPoints = Number($('#points').val());
-            var frequency = Number($('#frequency').val());
-            var msBetweenPlot = 1000/frequency;
-            while (xTimes.length > nrPoints) {
-              xTimes.shift();
-              yPos.shift();
-              yRdg.shift();
-            }
-            position_chart.load({
-              columns : [ [ 'x' ].concat(xTimes), [ 'position' ].concat(yPos), [ 'reading' ].concat(yRdg) ]
-            });
-            if (running) setTimeout(plot, msBetweenPlot);
-
-          }).fail(showError);
+            url: `http://${sensorServerIP()}:${sensorServerPort()}/position`,
+            dataType: 'json',
+          })
+            .done(function (data) {
+              var now = Date.now();
+              xTimes.push((now - startNow) / 1000);
+              // sensor position
+              var y = data.position;
+              $('#currentPosition').text(y);
+              yPos.push(y);
+              if (y < yMin) {
+                yMin = y;
+                position_chart.axis.min(y);
+              }
+              if (y > yMax) {
+                yMax = y;
+                position_chart.axis.max(y);
+              }
+              // sensor reading
+              y = data.hasOwnProperty('sensor_reading')
+                ? data.sensor_reading
+                : data.sensor_position;
+              $('#currentReading').text(y);
+              yRdg.push(y);
+              if (y < yMin) {
+                yMin = y;
+                position_chart.axis.min(y);
+              }
+              if (y > yMax) {
+                yMax = y;
+                position_chart.axis.max(y);
+              }
+              // plotting
+              var nrPoints = Number($('#points').val());
+              var frequency = Number($('#frequency').val());
+              var msBetweenPlot = 1000 / frequency;
+              while (xTimes.length > nrPoints) {
+                xTimes.shift();
+                yPos.shift();
+                yRdg.shift();
+              }
+              position_chart.load({
+                columns: [
+                  ['x'].concat(xTimes),
+                  ['position'].concat(yPos),
+                  ['reading'].concat(yRdg),
+                ],
+              });
+              if (running) setTimeout(plot, msBetweenPlot);
+            })
+            .fail(showError);
         }
       </script>
     </section>
@@ -228,7 +254,14 @@
       <h3>brightness</h3>
       <div>
         <span>Brightness</span>
-        <input type="range" min="0.0" max="1.0" step="0.05" id="brightnessIn" onchange="setBrightness()">
+        <input
+          type="range"
+          min="0.0"
+          max="1.0"
+          step="0.05"
+          id="brightnessIn"
+          onchange="setBrightness()"
+        />
         <span id="brightness"></span>
       </div>
       <script type="text/javascript">
@@ -243,14 +276,16 @@
             var byteLevel = Math.floor(level * 255);
             $.ajax({
               url: `http://${sensorServerIP()}:${sensorServerPort()}/brightness`,
-              type: 'POST', 
+              type: 'POST',
               contentType: false,
-              data: JSON.stringify({level: byteLevel})
-            }).done(function(data){
-              console.log(`Brightness: ${level}`);
-            }).fail(function(jqXHR, textStatus, errorThrown){
-              showError(jqXHR, textStatus, errorThrown, 'brightness');
-            });
+              data: JSON.stringify({ level: byteLevel }),
+            })
+              .done(function (data) {
+                console.log(`Brightness: ${level}`);
+              })
+              .fail(function (jqXHR, textStatus, errorThrown) {
+                showError(jqXHR, textStatus, errorThrown, 'brightness');
+              });
           }
         }
         setBrightness(0.25);
@@ -275,10 +310,12 @@
             url: `http://${sensorServerIP()}:${sensorServerPort()}/identify`,
             type: 'POST',
             contentType: false,
-            data: JSON.stringify({machineId: machineId, machineName: machineName})
-          }).done(function(data){
-            $('#identifyResult').text(JSON.stringify(data));
-          }).fail(showError); 
+            data: JSON.stringify({ machineId: machineId, machineName: machineName }),
+          })
+            .done(function (data) {
+              $('#identifyResult').text(JSON.stringify(data));
+            })
+            .fail(showError);
         }
       </script>
     </section>
@@ -289,7 +326,14 @@
         <tr>
           <td colspan="2">
             <span>Easing</span>
-            <input type="range" min="0.0" max="5.0" step="0.05" id="easingFactorIn" onchange="setEasing()">
+            <input
+              type="range"
+              min="0.0"
+              max="5.0"
+              step="0.05"
+              id="easingFactorIn"
+              onchange="setEasing()"
+            />
             <span id="easingFactor"></span>
           </td>
         </tr>
@@ -309,7 +353,7 @@
       <script type="text/javascript">
         var exerciseSocket = undefined;
         var socketReadyStates = ['connecting', 'open', 'closing', 'closed'];
-        
+
         // Chart data
         var startTime = undefined;
         var measurements = undefined;
@@ -318,7 +362,7 @@
         var chartTimes = undefined;
         var chartReferencePoss = undefined;
         var chartActualPoss = undefined;
-        
+
         function initChart() {
           // startTime = Date.now(); // done after lead-in phase
           measurements = [];
@@ -327,11 +371,12 @@
           chartReferencePoss = [];
           chartActualPoss = [];
           chart = c3.generate({
-            bindto: '#chart', transition: { duration: 0 },
+            bindto: '#chart',
+            transition: { duration: 0 },
             data: {
               x: 'time',
-              columns: []
-            }
+              columns: [],
+            },
           });
           $('#scores').html('');
         }
@@ -345,18 +390,26 @@
             var socket = new WebSocket(socketURL, 'websocket');
             console.log(`Socket [${socketReadyStates[socket.readyState]}] connection request sent`);
             socket.onopen = function (event) {
-              console.log(`Socket [${socketReadyStates[socket.readyState]}] open via ${JSON.stringify(socket)}: ${JSON.stringify(event)}`);
+              console.log(
+                `Socket [${socketReadyStates[socket.readyState]}] open via ${JSON.stringify(
+                  socket,
+                )}: ${JSON.stringify(event)}`,
+              );
             };
-            socket.onerror = function(event) {
+            socket.onerror = function (event) {
               debugger;
-              console.error(`Error socket [${socketReadyStates[socket.readyState]}] error: ${JSON.stringify(event)}`);
+              console.error(
+                `Error socket [${socketReadyStates[socket.readyState]}] error: ${JSON.stringify(
+                  event,
+                )}`,
+              );
             };
-            socket.onmessage = function(event) {
+            socket.onmessage = function (event) {
               if (startTime < 0) {
                 return; // stationary phase
               }
               var data = JSON.parse(event.data);
-//console.info(JSON.stringify(data));
+              //console.info(JSON.stringify(data));
               var now = data.time; // more reliable than local clock, no network latency
               if (!startTime && data.halfRepetition) {
                 // coming out of lead-in phase
@@ -366,27 +419,35 @@
                 var durationSec = (now - startTime) / 1000;
                 if (data.referencePosition > 1.5 && positionFactor < 10) {
                   console.warn('Using old RiseApps API.');
-                  positionFactor = 1/100; // old app used 0..100
+                  positionFactor = 1 / 100; // old app used 0..100
                 }
                 var actual_position = data.actualPosition * positionFactor;
                 var reference_position = data.referencePosition * positionFactor;
-                measurements.push({time: durationSec, hr: data.halfRepetition, ref: reference_position, act: actual_position});
+                measurements.push({
+                  time: durationSec,
+                  hr: data.halfRepetition,
+                  ref: reference_position,
+                  act: actual_position,
+                });
                 if (now - plotTime > 200) {
                   plotTime = now;
                   chartTimes.push(durationSec);
                   chartReferencePoss.push(data.referencePosition);
                   chartActualPoss.push(data.actualPosition);
                   chart.load({
-                    columns : [ [ 'time' ].concat(chartTimes),
-                                [ 'reference' ].concat(chartReferencePoss),
-                                [ 'actual' ].concat(chartActualPoss)
-                              ]
+                    columns: [
+                      ['time'].concat(chartTimes),
+                      ['reference'].concat(chartReferencePoss),
+                      ['actual'].concat(chartActualPoss),
+                    ],
                   });
                 }
               }
             };
-            socket.onclose = function(event) {
-              console.log(`Socket [${socketReadyStates[socket.readyState]}] closed: ${JSON.stringify(event)}`);
+            socket.onclose = function (event) {
+              console.log(
+                `Socket [${socketReadyStates[socket.readyState]}] closed: ${JSON.stringify(event)}`,
+              );
             };
             return socket;
           } catch (ex) {
@@ -398,11 +459,11 @@
       <script type="text/javascript">
         var configureData = {
           member: { id: '857005', name: 'Jane Doe' },
-          calibration: {start: 0, end: 0},
+          calibration: { start: 0, end: 0 },
           trackingFactor: 5,
-          easingFactor: undefined
+          easingFactor: undefined,
         };
-        
+
         function setEasing(easingFactor) {
           if (isUndefined(easingFactor)) {
             easingFactor = $('#easingFactorIn').val();
@@ -413,74 +474,94 @@
           configureData.easingFactor = easingFactor;
         }
         setEasing(2.5);
-        
+
         function configureReset() {
           // First finish to (re-)enter exercise.
           $.ajax({
-            url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/finish`
-          }).done(function(){
+            url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/finish`,
+          }).done(function () {
             console.log('Configure to set the resting position.');
             $.ajax({
               url: `http://${sensorServerIP()}:${sensorServerPort()}/configure`,
-              type: 'POST', 
+              type: 'POST',
               contentType: false,
-              data: JSON.stringify(configureData)
-            }).done(function(){
+              data: JSON.stringify(configureData),
+            }).done(function () {
               $.ajax({
-                url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/finish`
-              })
+                url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/finish`,
+              });
             });
           });
         }
-                
+
         function calibrateConfigure() {
           // First finish to (re-)enter exercise.
           $.ajax({
-            url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/finish`
-          }).done(function(){
-            console.log('Configure to set the resting position and auto-calibration.');
-            configureData.calibration = {start: 0, end: 500};
-            $('#calstart').text(0);
-            $('#calend').text(500);
-            $.ajax({
-              url: `http://${sensorServerIP()}:${sensorServerPort()}/configure`,
-              type: 'POST', 
-              contentType: false,
-              data: JSON.stringify(configureData)
-            }).done(function(data){
-              initChart();
-              exerciseSocket = getExerciseSocket();
+            url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/finish`,
+          })
+            .done(function () {
+              console.log('Configure to set the resting position and auto-calibration.');
+              configureData.calibration = { start: 0, end: 500 };
+              $('#calstart').text(0);
+              $('#calend').text(500);
               $.ajax({
-                url: `http://${sensorServerIP()}:${sensorServerPort()}/position`,
-                dataType: 'json'
-              }).done(function(data){
-                console.log(`Current position = ${data.position}`);
-              }).fail(function(jqXHR, textStatus, errorThrown){showError(jqXHR, textStatus, errorThrown, 'position')});
-            }).fail(function(jqXHR, textStatus, errorThrown){showError(jqXHR, textStatus, errorThrown, 'configure')});            
-          }).fail(function(jqXHR, textStatus, errorThrown){showError(jqXHR, textStatus, errorThrown, 'finish')});
+                url: `http://${sensorServerIP()}:${sensorServerPort()}/configure`,
+                type: 'POST',
+                contentType: false,
+                data: JSON.stringify(configureData),
+              })
+                .done(function (data) {
+                  initChart();
+                  exerciseSocket = getExerciseSocket();
+                  $.ajax({
+                    url: `http://${sensorServerIP()}:${sensorServerPort()}/position`,
+                    dataType: 'json',
+                  })
+                    .done(function (data) {
+                      console.log(`Current position = ${data.position}`);
+                    })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                      showError(jqXHR, textStatus, errorThrown, 'position');
+                    });
+                })
+                .fail(function (jqXHR, textStatus, errorThrown) {
+                  showError(jqXHR, textStatus, errorThrown, 'configure');
+                });
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              showError(jqXHR, textStatus, errorThrown, 'finish');
+            });
         }
-        
+
         function calibrate(isStart) {
           $.ajax({
             url: `http://${sensorServerIP()}:${sensorServerPort()}/position`,
-            dataType: 'json'
-          }).done(function(data){
-            var pos = Number.parseInt(data.position);
-            if (isStart) {
-              configureData.calibration.start = pos;
-              $('#calstart').text(pos);
-            } else {
-              configureData.calibration.end = pos;
-              $('#calend').text(pos);
-            }
-            console.log(`Calibration: ${configureData.calibration.start} - ${configureData.calibration.end}`);
-            $.ajax({
-              url: `http://${sensorServerIP()}:${sensorServerPort()}/configure`,
-              type: 'POST', 
-              contentType: false,
-              data: JSON.stringify(configureData)
-            }).fail(function(jqXHR, textStatus, errorThrown){showError(jqXHR, textStatus, errorThrown, 'configure')});
-          }).fail(function(jqXHR, textStatus, errorThrown){showError(jqXHR, textStatus, errorThrown, 'position')});
+            dataType: 'json',
+          })
+            .done(function (data) {
+              var pos = Number.parseInt(data.position);
+              if (isStart) {
+                configureData.calibration.start = pos;
+                $('#calstart').text(pos);
+              } else {
+                configureData.calibration.end = pos;
+                $('#calend').text(pos);
+              }
+              console.log(
+                `Calibration: ${configureData.calibration.start} - ${configureData.calibration.end}`,
+              );
+              $.ajax({
+                url: `http://${sensorServerIP()}:${sensorServerPort()}/configure`,
+                type: 'POST',
+                contentType: false,
+                data: JSON.stringify(configureData),
+              }).fail(function (jqXHR, textStatus, errorThrown) {
+                showError(jqXHR, textStatus, errorThrown, 'configure');
+              });
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              showError(jqXHR, textStatus, errorThrown, 'position');
+            });
         }
       </script>
     </section>
@@ -494,11 +575,11 @@
         <button onclick="exerciseSend('finish')">FINISH</button>
       </div>
       <h3 id="scores"></h3>
-      <div id="chart" class="c3" style="clear:both;"></div>
+      <div id="chart" class="c3" style="clear: both"></div>
       <script type="text/javascript">
         function exerciseSend(action, options) {
           options = options || {};
-          console.log("Exercise "+action);
+          console.log('Exercise ' + action);
           if (action == 'start') {
             if (!configureData.calibration) calibrateConfigure();
           } else if (action == 'stationary') {
@@ -518,43 +599,68 @@
           }
           // Now send the action.
           console.log(`Sending exercise ${action}`);
-          $.ajax(Object.assign({
-              url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/`+action,
-              type: 'GET',
-            }, options._postData ? {
-                type: 'POST',
-                data: JSON.stringify(options._postData),
-                processData : false,
-                contentType: false
-              } : {}
-            )
-          ).done(function(data){
-            console.log(`Exercise ${action}: ${JSON.stringify(data)}`);
-          }).fail(function(jqXHR, textStatus, errorThrown){
-            console.log(`Exercise ${action} error`);
-            showError(jqXHR, textStatus, errorThrown, '/exercise/'+action);
-          });
+          $.ajax(
+            Object.assign(
+              {
+                url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/` + action,
+                type: 'GET',
+              },
+              options._postData
+                ? {
+                    type: 'POST',
+                    data: JSON.stringify(options._postData),
+                    processData: false,
+                    contentType: false,
+                  }
+                : {},
+            ),
+          )
+            .done(function (data) {
+              console.log(`Exercise ${action}: ${JSON.stringify(data)}`);
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              console.log(`Exercise ${action} error`);
+              showError(jqXHR, textStatus, errorThrown, '/exercise/' + action);
+            });
         }
-        
+
         function qualityScores() {
           var machineName = $('#machineName').val();
           var machineGroupId = machineName.endsWith('duction') ? 'mg1' : 'mg0';
           var reversalIndexes = qs.calculateReversalIndexes(measurements);
-          var tempoScore = Math.round(qs.calculateTempoScore(machineGroupId, measurements, reversalIndexes));
-          var rangeScore = Math.round(qs.calculateRangeScore(machineGroupId, measurements, reversalIndexes));
-          var rhythmScore = Math.round(qs.calculateRhythmScore(machineGroupId, measurements, reversalIndexes));
-          var totalQualityScore = Math.round(qs.calculateTotalQualityScore({tempo:tempoScore, range: rangeScore, rhythm: rhythmScore}));
-          chart.xgrids(reversalIndexes.map(ri => ({value: measurements[ri].time, text: measurements[ri].time})));
-          $('#scores').html(`| total: ${totalQualityScore} | tempo: ${tempoScore} | rhythm: ${rhythmScore} | range: ${rangeScore} |`);
+          var tempoScore = Math.round(
+            qs.calculateTempoScore(machineGroupId, measurements, reversalIndexes),
+          );
+          var rangeScore = Math.round(
+            qs.calculateRangeScore(machineGroupId, measurements, reversalIndexes),
+          );
+          var rhythmScore = Math.round(
+            qs.calculateRhythmScore(machineGroupId, measurements, reversalIndexes),
+          );
+          var totalQualityScore = Math.round(
+            qs.calculateTotalQualityScore({
+              tempo: tempoScore,
+              range: rangeScore,
+              rhythm: rhythmScore,
+            }),
+          );
+          chart.xgrids(
+            reversalIndexes.map((ri) => ({
+              value: measurements[ri].time,
+              text: measurements[ri].time,
+            })),
+          );
+          $('#scores').html(
+            `| total: ${totalQualityScore} | tempo: ${tempoScore} | rhythm: ${rhythmScore} | range: ${rangeScore} |`,
+          );
           return {
             tempo: tempoScore,
             rhythm: rhythmScore,
             range: rangeScore,
-            total: totalQualityScore
+            total: totalQualityScore,
           };
         }
       </script>
     </section>
-
   </body>
 </html>
