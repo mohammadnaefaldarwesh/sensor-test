@@ -7,8 +7,24 @@
     <script src="c3/d3-5.4.0.min.js" charset="utf-8"></script>
     <script src="c3/c3.min.js"></script>
     <script src="socket.io.js"></script>
-    <script src="v4web/js/app/sensors/qs.js"></script>
+    <script src="../v4web/js/app/sensors/qs.js"></script>
     <script type="text/javascript">
+      // Located somewhere on https://your-site.com
+      import * as BypassCors from 'cors-bypass';
+
+      const client = new BypassCors.Client();
+
+      await client.getServer(); // null - no server connected yet
+      await client.openServerInNewTab({
+        serverUrl: 'http://127.0.0.1:5500/server.html',
+        adapterUrl: 'https://mohammadnaefaldarwesh.github.io/sensor-test/adapter.html',
+      });
+      await client.getServer(); // { id: 123, url: 'http://random-domain.com/server.html' }
+
+      // Create a WebSocket (websocket is loaded in the server tab, but it's API is available on this page)
+      const ws = new BypassCors.WebSocket('ws://echo.websocket.org');
+      ws.onopen = () => ws.send('hello');
+      ws.onmessage = ({ data }) => console.log('received', data);
       var fit20 = {};
     </script>
     <style type="text/css">
