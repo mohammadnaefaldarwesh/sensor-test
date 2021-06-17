@@ -29,29 +29,31 @@
 
       window.popup = window.open('http://127.0.0.1:5500/server.html');
 
-      function xfetch(...args) {
+      function xfetch(...args,bodyData) {
         // tell the proxy to make the request
         const ms = new MessageChannel();
         console.log('ms created');
         try {
-          popup.postMessage(args, '*', [ms.port1]);
-
+          bodyData ? popup.postMessage([args,bodyData], '*', [ms.port1]):
+          popup.postMessage([args], '*', [ms.port1]);
           // Resolves when the headers comes
           return new Promise((rs, rj) => {
             // First message will resolve the Response Object
             ms.port2.onmessage = ({ data }) => {
               const stream = new ReadableStream({
                 start(controller) {
-                  console.log('start changing om ms to pipe');
+                  console.log('start changing onmessage to pipe');
                   // Change the onmessage to pipe the remaning request
                   ms.port2.onmessage = (evt) => {
                     if (evt.data === true) {
                       // Done?
                       console.log('Done');
                       controller.close();
+                    } else {
                       // enqueue the buffer to the stream
                       console.log('enqueue the buffer to the stream');
-                    } else controller.enqueue(evt.data);
+                      controller.enqueue(evt.data);
+                    }
                   };
                 },
               });
@@ -60,7 +62,7 @@
               // response headers and a stream
               console.log('start Construct a new response');
               rs(new Response(stream, data));
-              console.log('xfetch finished');
+              console.log('Response has been sent');
             };
           });
         } catch (err) {
@@ -230,22 +232,22 @@
         var position_chart;
 
         function startRunning() {
-          // position_chart = c3.generate({
-          //   bindto: '#chart',
-          //   transition: { duration: 0 },
-          //   data: { x: 'x', columns: [] },
-          //   axis: {
-          //     y: { min: yMin, max: yMax },
-          //   },
-          // });
-          // running = true;
-          // startNow = Date.now();
-          // xTimes = [];
-          // yPos = [];
-          // yRdg = [];
-          // yMin = -100;
-          // yMax = 100;
-          // plot();
+          position_chart = c3.generate({
+            bindto: '#chart',
+            transition: { duration: 0 },
+            data: { x: 'x', columns: [] },
+            axis: {
+              y: { min: yMin, max: yMax },
+            },
+          });
+          running = true;
+          startNow = Date.now();
+          xTimes = [];
+          yPos = [];
+          yRdg = [];
+          yMin = -100;
+          yMax = 100;
+          plot();
 
           // window.popup = window.open('http://127.0.0.1:5500/server.html');
 
@@ -339,18 +341,25 @@
           $('#brightness').text(level);
           if (!isNaN(parseFloat(level)) && level >= 0.0 && level <= 1.0) {
             var byteLevel = Math.floor(level * 255);
-            $.ajax({
-              url: `http://${sensorServerIP()}:${sensorServerPort()}/brightness`,
-              type: 'POST',
-              contentType: false,
-              data: JSON.stringify({ level: byteLevel }),
+
+            xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/brightness`, {
+              level: byteLevel,
             })
-              .done(function (data) {
-                console.log(`Brightness: ${level}`);
-              })
-              .fail(function (jqXHR, textStatus, errorThrown) {
-                showError(jqXHR, textStatus, errorThrown, 'brightness');
-              });
+              .then((res) => console.log(`Brightness: ${level}`))
+              .catch((err) => console.log(err));
+
+            // $.ajax({
+            //   url: `http://${sensorServerIP()}:${sensorServerPort()}/brightness`,
+            //   type: 'POST',
+            //   contentType: false,
+            //   data: JSON.stringify({ level: byteLevel }),
+            // })
+            //   .done(function (data) {
+            //     console.log(`Brightness: ${level}`);
+            //   })
+            //   .fail(function (jqXHR, textStatus, errorThrown) {
+            //     showError(jqXHR, textStatus, errorThrown, 'brightness');
+            //   });
           }
         }
         setBrightness(0.25);
