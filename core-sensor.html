@@ -27,6 +27,8 @@
       // ws.onopen = () => ws.send('hello');
       // ws.onmessage = ({ data }) => console.log('received', data);
 
+      window.popup = window.open('http://127.0.0.1:5500/server.html');
+
       function xfetch(...args) {
         // tell the proxy to make the request
         const ms = new MessageChannel();
@@ -245,7 +247,7 @@
           // yMax = 100;
           // plot();
 
-          window.popup = window.open('http://127.0.0.1:5500/server.html');
+          // window.popup = window.open('http://127.0.0.1:5500/server.html');
 
           xfetch('http://www.mohammaddarwesh.com/js/chunk-vendors.db6a3783.js')
             .then((res) => res.json())
