@@ -29,13 +29,14 @@
 
       window.popup = window.open('http://127.0.0.1:5500/server.html');
 
-      function xfetch(...args,bodyData) {
+      function xfetch(args, bodyData) {
         // tell the proxy to make the request
         const ms = new MessageChannel();
         console.log('ms created');
         try {
-          bodyData ? popup.postMessage([args,bodyData], '*', [ms.port1]):
-          popup.postMessage([args], '*', [ms.port1]);
+          bodyData
+            ? popup.postMessage([args, bodyData], '*', [ms.port1])
+            : popup.postMessage([args], '*', [ms.port1]);
           // Resolves when the headers comes
           return new Promise((rs, rj) => {
             // First message will resolve the Response Object
