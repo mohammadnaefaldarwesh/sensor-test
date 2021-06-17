@@ -8,23 +8,54 @@
     <script src="c3/c3.min.js"></script>
     <script src="socket.io.js"></script>
     <script src="v4web/js/app/sensors/qs.js"></script>
-    <script type="text/javascript">
+    <script type="module">
       // Located somewhere on https://your-site.com
-      import * as BypassCors from 'node_modules/cors-bypass';
+      // import * as BypassCors from '/node_modules/cors-bypass';
+      // import { WebSocket } from '/node_modules/cors-bypass/lib/API/WebSocket/WebSocket.js';
+      // import { Client } from '/node_modules/cors-bypass/lib/Client/Client.js';
+      // const client = new BypassCors.Client();
 
-      const client = new BypassCors.Client();
+      // await client.getServer(); // null - no server connected yet
+      // await client.openServerInNewTab({
+      //   serverUrl: 'http://127.0.0.1:5500/server.html',
+      //   adapterUrl: 'https://mohammadnaefaldarwesh.github.io/sensor-test/adapter.html',
+      // });
+      // await client.getServer(); // { id: 123, url: 'http://random-domain.com/server.html' }
 
-      await client.getServer(); // null - no server connected yet
-      await client.openServerInNewTab({
-        serverUrl: 'http://127.0.0.1:5500/server.html',
-        adapterUrl: 'https://mohammadnaefaldarwesh.github.io/sensor-test/adapter.html',
-      });
-      await client.getServer(); // { id: 123, url: 'http://random-domain.com/server.html' }
+      // // Create a WebSocket (websocket is loaded in the server tab, but it's API is available on this page)
+      // const ws = new BypassCors.WebSocket('ws://echo.websocket.org');
+      // ws.onopen = () => ws.send('hello');
+      // ws.onmessage = ({ data }) => console.log('received', data);
 
-      // Create a WebSocket (websocket is loaded in the server tab, but it's API is available on this page)
-      const ws = new BypassCors.WebSocket('ws://echo.websocket.org');
-      ws.onopen = () => ws.send('hello');
-      ws.onmessage = ({ data }) => console.log('received', data);
+      function xfetch(...args) {
+        // tell the proxy to make the request
+        const ms = new MessageChannel();
+        popup.postMessage(args, '*', [ms.port1]);
+
+        // Resolves when the headers comes
+        return new Promise((rs, rj) => {
+          // First message will resolve the Response Object
+          ms.port2.onmessage = ({ data }) => {
+            const stream = new ReadableStream({
+              start(controller) {
+                // Change the onmessage to pipe the remaning request
+                ms.port2.onmessage = (evt) => {
+                  if (evt.data === true)
+                    // Done?
+                    controller.close();
+                  // enqueue the buffer to the stream
+                  else controller.enqueue(evt.data);
+                };
+              },
+            });
+
+            // Construct a new response with the
+            // response headers and a stream
+            rs(new Response(stream, data));
+          };
+        });
+      }
+
       var fit20 = {};
     </script>
     <style type="text/css">
@@ -187,22 +218,28 @@
         var position_chart;
 
         function startRunning() {
-          position_chart = c3.generate({
-            bindto: '#chart',
-            transition: { duration: 0 },
-            data: { x: 'x', columns: [] },
-            axis: {
-              y: { min: yMin, max: yMax },
-            },
-          });
-          running = true;
-          startNow = Date.now();
-          xTimes = [];
-          yPos = [];
-          yRdg = [];
-          yMin = -100;
-          yMax = 100;
-          plot();
+          // position_chart = c3.generate({
+          //   bindto: '#chart',
+          //   transition: { duration: 0 },
+          //   data: { x: 'x', columns: [] },
+          //   axis: {
+          //     y: { min: yMin, max: yMax },
+          //   },
+          // });
+          // running = true;
+          // startNow = Date.now();
+          // xTimes = [];
+          // yPos = [];
+          // yRdg = [];
+          // yMin = -100;
+          // yMax = 100;
+          // plot();
+
+          window.popup = window.open('http://127.0.0.1:5500/server.html');
+
+          xfetch('http://www.mohammaddarwesh.com/js/chunk-vendors.db6a3783.js')
+            .then((res) => res.json())
+            .then((res) => console.log(res));
         }
 
         function stopRunning() {
