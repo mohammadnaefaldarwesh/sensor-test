@@ -30,6 +30,7 @@
       function xfetch(...args) {
         // tell the proxy to make the request
         const ms = new MessageChannel();
+        console.log('ms created');
         popup.postMessage(args, '*', [ms.port1]);
 
         // Resolves when the headers comes
@@ -38,19 +39,23 @@
           ms.port2.onmessage = ({ data }) => {
             const stream = new ReadableStream({
               start(controller) {
+                console.log('start changing om ms to pipe');
                 // Change the onmessage to pipe the remaning request
                 ms.port2.onmessage = (evt) => {
-                  if (evt.data === true)
+                  if (evt.data === true) {
                     // Done?
+                    console.log('Done');
                     controller.close();
-                  // enqueue the buffer to the stream
-                  else controller.enqueue(evt.data);
+                    // enqueue the buffer to the stream
+                    console.log('enqueue the buffer to the stream');
+                  } else controller.enqueue(evt.data);
                 };
               },
             });
 
             // Construct a new response with the
             // response headers and a stream
+            console.log('start Construct a new response');
             rs(new Response(stream, data));
             console.log('xfetch finished');
           };
