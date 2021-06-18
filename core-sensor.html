@@ -28,6 +28,8 @@
       // ws.onmessage = ({ data }) => console.log('received', data);
 
       window.popup = window.open('http://127.0.0.1:5500/server.html');
+      // window options  :
+      //  '_blank', 'toolbar,status,menubar,scrollbars,resizable=on,left=0, top=500, width=100, height=100, visible=none',
 
       function xfetch(args, bodyData) {
         // tell the proxy to make the request
@@ -252,9 +254,9 @@
 
           // window.popup = window.open('http://127.0.0.1:5500/server.html');
 
-          xfetch('http://www.mohammaddarwesh.com/js/chunk-vendors.db6a3783.js')
-            .then((res) => res.text())
-            .then((results) => console.log(results));
+          //   xfetch('http://www.mohammaddarwesh.com/js/chunk-vendors.db6a3783.js')
+          //     .then((res) => res.text())
+          //     .then((results) => console.log(results));
         }
 
         function stopRunning() {
@@ -571,42 +573,62 @@
         }
 
         function calibrateConfigure() {
-          // First finish to (re-)enter exercise.
-          $.ajax({
-            url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/finish`,
-          })
-            .done(function () {
+          xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/exercise/finish`)
+            .then((res) => {
               console.log('Configure to set the resting position and auto-calibration.');
               configureData.calibration = { start: 0, end: 500 };
               $('#calstart').text(0);
               $('#calend').text(500);
-              $.ajax({
-                url: `http://${sensorServerIP()}:${sensorServerPort()}/configure`,
-                type: 'POST',
-                contentType: false,
-                data: JSON.stringify(configureData),
+              xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/configure`, {
+                configureData,
               })
-                .done(function (data) {
+                .then((data) => {
                   initChart();
                   exerciseSocket = getExerciseSocket();
-                  $.ajax({
-                    url: `http://${sensorServerIP()}:${sensorServerPort()}/position`,
-                    dataType: 'json',
-                  })
-                    .done(function (data) {
-                      console.log(`Current position = ${data.position}`);
-                    })
-                    .fail(function (jqXHR, textStatus, errorThrown) {
-                      showError(jqXHR, textStatus, errorThrown, 'position');
-                    });
+                  xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
+                    .then((res) => console.log(`Current position = ${data.position}`))
+                    .catch((err) => console.log(err));
                 })
-                .fail(function (jqXHR, textStatus, errorThrown) {
-                  showError(jqXHR, textStatus, errorThrown, 'configure');
-                });
+                .catch((err) => console.log(err));
             })
-            .fail(function (jqXHR, textStatus, errorThrown) {
-              showError(jqXHR, textStatus, errorThrown, 'finish');
-            });
+            .catch((err) => console.log(err));
+
+          // First finish to (re-)enter exercise.
+          // $.ajax({
+          //   url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/finish`,
+          // })
+          //   .done(function () {
+          //     console.log('Configure to set the resting position and auto-calibration.');
+          //     configureData.calibration = { start: 0, end: 500 };
+          //     $('#calstart').text(0);
+          //     $('#calend').text(500);
+          //     $.ajax({
+          //       url: `http://${sensorServerIP()}:${sensorServerPort()}/configure`,
+          //       type: 'POST',
+          //       contentType: false,
+          //       data: JSON.stringify(configureData),
+          //     })
+          //       .done(function (data) {
+          //         initChart();
+          //         exerciseSocket = getExerciseSocket();
+          //         $.ajax({
+          //           url: `http://${sensorServerIP()}:${sensorServerPort()}/position`,
+          //           dataType: 'json',
+          //         })
+          //           .done(function (data) {
+          //             console.log(`Current position = ${data.position}`);
+          //           })
+          //           .fail(function (jqXHR, textStatus, errorThrown) {
+          //             showError(jqXHR, textStatus, errorThrown, 'position');
+          //           });
+          //       })
+          //       .fail(function (jqXHR, textStatus, errorThrown) {
+          //         showError(jqXHR, textStatus, errorThrown, 'configure');
+          //       });
+          //   })
+          //   .fail(function (jqXHR, textStatus, errorThrown) {
+          //     showError(jqXHR, textStatus, errorThrown, 'finish');
+          //   });
         }
 
         function calibrate(isStart) {
