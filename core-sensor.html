@@ -460,78 +460,82 @@
         }
 
         function getExerciseSocket() {
-          var socketURL = `ws://${sensorServerIP()}:${webSocketPort()}/${webSocketUrl()}`;
-          // https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_client_applications
-          console.log(`Socket connecting to ${socketURL}`);
-          var positionFactor = 1; // will be 100 for old app
-          try {
-            var socket = new WebSocket(socketURL, 'websocket');
-            console.log(`Socket [${socketReadyStates[socket.readyState]}] connection request sent`);
-            socket.onopen = function (event) {
-              console.log(
-                `Socket [${socketReadyStates[socket.readyState]}] open via ${JSON.stringify(
-                  socket,
-                )}: ${JSON.stringify(event)}`,
-              );
-            };
-            socket.onerror = function (event) {
-              debugger;
-              console.error(
-                `Error socket [${socketReadyStates[socket.readyState]}] error: ${JSON.stringify(
-                  event,
-                )}`,
-              );
-            };
-            socket.onmessage = function (event) {
-              if (startTime < 0) {
-                return; // stationary phase
-              }
-              var data = JSON.parse(event.data);
-              //console.info(JSON.stringify(data));
-              var now = data.time; // more reliable than local clock, no network latency
-              if (!startTime && data.halfRepetition) {
-                // coming out of lead-in phase
-                startTime = now;
-              }
-              if (startTime) {
-                var durationSec = (now - startTime) / 1000;
-                if (data.referencePosition > 1.5 && positionFactor < 10) {
-                  console.warn('Using old RiseApps API.');
-                  positionFactor = 1 / 100; // old app used 0..100
-                }
-                var actual_position = data.actualPosition * positionFactor;
-                var reference_position = data.referencePosition * positionFactor;
-                measurements.push({
-                  time: durationSec,
-                  hr: data.halfRepetition,
-                  ref: reference_position,
-                  act: actual_position,
-                });
-                if (now - plotTime > 200) {
-                  plotTime = now;
-                  chartTimes.push(durationSec);
-                  chartReferencePoss.push(data.referencePosition);
-                  chartActualPoss.push(data.actualPosition);
-                  chart.load({
-                    columns: [
-                      ['time'].concat(chartTimes),
-                      ['reference'].concat(chartReferencePoss),
-                      ['actual'].concat(chartActualPoss),
-                    ],
-                  });
-                }
-              }
-            };
-            socket.onclose = function (event) {
-              console.log(
-                `Socket [${socketReadyStates[socket.readyState]}] closed: ${JSON.stringify(event)}`,
-              );
-            };
-            return socket;
-          } catch (ex) {
-            debugger;
-            console.error(`Socket exception: ${ex}`);
-          }
+          xfetch(`ws://${sensorServerIP()}:${webSocketPort()}/${webSocketUrl()}`, 'webSocket')
+            .then((res) => console.log(res))
+            .catch((err) => console.log(err));
+
+          // var socketURL = `ws://${sensorServerIP()}:${webSocketPort()}/${webSocketUrl()}`;
+          // // https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_client_applications
+          // console.log(`Socket connecting to ${socketURL}`);
+          // var positionFactor = 1; // will be 100 for old app
+          // try {
+          //   var socket = new WebSocket(socketURL, 'websocket');
+          //   console.log(`Socket [${socketReadyStates[socket.readyState]}] connection request sent`);
+          //   socket.onopen = function (event) {
+          //     console.log(
+          //       `Socket [${socketReadyStates[socket.readyState]}] open via ${JSON.stringify(
+          //         socket,
+          //       )}: ${JSON.stringify(event)}`,
+          //     );
+          //   };
+          //   socket.onerror = function (event) {
+          //     debugger;
+          //     console.error(
+          //       `Error socket [${socketReadyStates[socket.readyState]}] error: ${JSON.stringify(
+          //         event,
+          //       )}`,
+          //     );
+          //   };
+          //   socket.onmessage = function (event) {
+          //     if (startTime < 0) {
+          //       return; // stationary phase
+          //     }
+          //     var data = JSON.parse(event.data);
+          //     //console.info(JSON.stringify(data));
+          //     var now = data.time; // more reliable than local clock, no network latency
+          //     if (!startTime && data.halfRepetition) {
+          //       // coming out of lead-in phase
+          //       startTime = now;
+          //     }
+          //     if (startTime) {
+          //       var durationSec = (now - startTime) / 1000;
+          //       if (data.referencePosition > 1.5 && positionFactor < 10) {
+          //         console.warn('Using old RiseApps API.');
+          //         positionFactor = 1 / 100; // old app used 0..100
+          //       }
+          //       var actual_position = data.actualPosition * positionFactor;
+          //       var reference_position = data.referencePosition * positionFactor;
+          //       measurements.push({
+          //         time: durationSec,
+          //         hr: data.halfRepetition,
+          //         ref: reference_position,
+          //         act: actual_position,
+          //       });
+          //       if (now - plotTime > 200) {
+          //         plotTime = now;
+          //         chartTimes.push(durationSec);
+          //         chartReferencePoss.push(data.referencePosition);
+          //         chartActualPoss.push(data.actualPosition);
+          //         chart.load({
+          //           columns: [
+          //             ['time'].concat(chartTimes),
+          //             ['reference'].concat(chartReferencePoss),
+          //             ['actual'].concat(chartActualPoss),
+          //           ],
+          //         });
+          //       }
+          //     }
+          //   };
+          //   socket.onclose = function (event) {
+          //     console.log(
+          //       `Socket [${socketReadyStates[socket.readyState]}] closed: ${JSON.stringify(event)}`,
+          //     );
+          //   };
+          //   return socket;
+          // } catch (ex) {
+          //   debugger;
+          //   console.error(`Socket exception: ${ex}`);
+          // }
         }
       </script>
       <script type="text/javascript">
