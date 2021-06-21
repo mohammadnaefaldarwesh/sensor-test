@@ -626,8 +626,8 @@
                 configureData,
               })
                 .then((data) => {
+                  console.log(data);
                   initChart();
-                  console.log('position started');
                   xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
                     .then((res) => console.log(`Current position = ${data.position}`))
                     .catch((err) => console.log(err));
