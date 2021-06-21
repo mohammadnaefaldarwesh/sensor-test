@@ -60,7 +60,7 @@
                       if (startTime < 0) {
                         return; // stationary phase
                       }
-                      var data = JSON.parse(evt.data);
+                      var data = evt.data;
                       //console.info(JSON.stringify(data));
                       var now = data.time; // more reliable than local clock, no network latency
                       if (!startTime && data.halfRepetition) {
