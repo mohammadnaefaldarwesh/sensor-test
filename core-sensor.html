@@ -629,7 +629,10 @@
                   console.log(data);
                   initChart();
                   xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
-                    .then((res) => console.log(`Current position = ${res.position}`))
+                    .then((res) => {
+                      console.log(`res = ${res}`);
+                      console.log(`Current position = ${res.position}`);
+                    })
                     .catch((err) => console.log(err));
                   exerciseSocket = getExerciseSocket();
                 })
