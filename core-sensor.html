@@ -55,8 +55,7 @@
                     } else {
                       // enqueue the buffer to the stream
                       console.log('enqueue the buffer to the stream');
-                      const data = controller.enqueue(evt.data);
-                      console.log(data);
+                      controller.enqueue(evt.data).then((data) => console.log(data));
                     }
                   };
                 },
@@ -593,7 +592,7 @@
                   exerciseSocket = getExerciseSocket();
                   xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
                     .then((res) => {
-                      console.log(`res = ${res}`);
+                      console.log(`res = ${res.data}`);
                       console.log(`Current position = ${res.position}`);
                     })
                     .catch((err) => console.log(err));
