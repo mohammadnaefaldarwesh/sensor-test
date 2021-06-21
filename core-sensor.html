@@ -589,7 +589,6 @@
                 .then((data) => {
                   console.log(data);
                   initChart();
-                  exerciseSocket = getExerciseSocket();
                   xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
                     .then((res) => {
                       const reader = data.body.getReader();
@@ -599,6 +598,7 @@
                       });
                     })
                     .catch((err) => console.log(err));
+                  exerciseSocket = getExerciseSocket();
                 })
                 .catch((err) => console.log(err));
             })
