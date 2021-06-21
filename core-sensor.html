@@ -55,8 +55,8 @@
                     } else {
                       // enqueue the buffer to the stream
                       console.log('enqueue the buffer to the stream');
-                      controller.enqueue(evt.data);
-                      console.log(evt.data);
+                      const data = controller.enqueue(evt.data);
+                      console.log(data);
                     }
                   };
                 },
