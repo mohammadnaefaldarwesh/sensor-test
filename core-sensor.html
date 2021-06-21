@@ -592,8 +592,11 @@
                   exerciseSocket = getExerciseSocket();
                   xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
                     .then((res) => {
-                      console.log(`res = ${res.data}`);
-                      console.log(`Current position = ${res.position}`);
+                      const reader = data.body.getReader();
+                      reader.read().then(({ value, done }) => {
+                        console.log(value, done);
+                        console.log(`Current position = ${res.position}`);
+                      });
                     })
                     .catch((err) => console.log(err));
                 })
