@@ -56,7 +56,45 @@
                       // enqueue the buffer to the stream
                       console.log('enqueue the buffer to the stream');
                       controller.enqueue(evt.data);
-                      console.log(evt.data);
+                      // console.log(evt.data);
+                      if (startTime < 0) {
+                        return; // stationary phase
+                      }
+                      // var data = JSON.parse(event.data);
+                      //console.info(JSON.stringify(data));
+                      var now = evt.data.time; // more reliable than local clock, no network latency
+                      if (!startTime && evt.data.halfRepetition) {
+                        // coming out of lead-in phase
+                        startTime = now;
+                      }
+                      if (startTime) {
+                        var durationSec = (now - startTime) / 1000;
+                        if (evt.data.referencePosition > 1.5 && positionFactor < 10) {
+                          console.warn('Using old RiseApps API.');
+                          positionFactor = 1 / 100; // old app used 0..100
+                        }
+                        var actual_position = evt.data.actualPosition * positionFactor;
+                        var reference_position = evt.data.referencePosition * positionFactor;
+                        measurements.push({
+                          time: durationSec,
+                          hr: evt.data.halfRepetition,
+                          ref: reference_position,
+                          act: actual_position,
+                        });
+                      }
+                      if (evt.data.actualPosition) {
+                        plotTime = now;
+                        chartTimes.push(durationSec);
+                        chartReferencePoss.push(evt.data.referencePosition);
+                        chartActualPoss.push(evt.data.actualPosition);
+                        chart.load({
+                          columns: [
+                            ['time'].concat(chartTimes),
+                            ['reference'].concat(chartReferencePoss),
+                            ['actual'].concat(chartActualPoss),
+                          ],
+                        });
+                      }
                     }
                   };
                 },
