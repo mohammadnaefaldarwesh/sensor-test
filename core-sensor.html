@@ -591,7 +591,8 @@
                   initChart();
                   xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
                     .then((res) => {
-                      const reader = data.body.getReader();
+                      console.log(RES);
+                      const reader = res.body.getReader();
                       reader
                         .read()
                         .then(({ value, done }) => {
