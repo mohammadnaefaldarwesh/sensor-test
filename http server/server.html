@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="jquery-1.11.0.min.js"></script>
+    <script src="socket.io.js"></script>
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>HTTP SERVER</h1>
+    <script type="text/javascript">
+      var socketReadyStates = ['connecting', 'open', 'closing', 'closed'];
+      let option;
+
+      onmessage = (evt) => {
+        const port = evt.ports[0];
+        console.log(evt.data);
+        let ws = evt.data[1] == 'webSocket' ? true : false;
+        if (ws) {
+          var socketURL = evt.data[0];
+          // https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_client_applications
+          console.log(`Socket connecting to ${socketURL}`);
+          var positionFactor = 1; // will be 100 for old app
+          try {
+            var socket = new WebSocket(socketURL, 'websocket');
+            console.log(`Socket [${socketReadyStates[socket.readyState]}] connection request sent`);
+            socket.onopen = function (event) {
+              console.log(
+                `Socket [${socketReadyStates[socket.readyState]}] open via ${JSON.stringify(
+                  socket,
+                )}: ${JSON.stringify(event)}`,
+              );
+            };
+            socket.onerror = function (event) {
+              debugger;
+              console.error(
+                `Error socket [${socketReadyStates[socket.readyState]}] error: ${JSON.stringify(
+                  event,
+                )}`,
+              );
+            };
+            socket.onmessage = function (event) {
+              var data = JSON.parse(event.data);
+              port.postMessage(data);
+            };
+            socket.onclose = function (event) {
+              console.log(
+                `Socket [${socketReadyStates[socket.readyState]}] closed: ${JSON.stringify(event)}`,
+              );
+            };
+            return socket;
+          } catch (ex) {
+            debugger;
+            console.error(`Socket exception: ${ex}`);
+          }
+        } else {
+          if (evt.data.length > 1) {
+            option = {
+              method: 'POST',
+              body: JSON.stringify(
+                evt.data[1].configureData ? evt.data[1].configureData : evt.data[1],
+              ),
+            };
+          }
+          // else if (evt.data[0].slice(-8) == 'position') {
+          //   option = {
+          //     method: 'GET',
+          //     headers: {
+          //       Accept: 'application/json',
+          //       'Content-Type': 'application/json',
+          //     },
+          //   };
+          // }
+          else {
+            option = {
+              method: 'GET',
+            };
+          }
+
+          // console.log(evt.data.length > 1);
+          // console.log(evt.data[0].slice(-9) == 'configure');
+          // if (evt.data.length > 1 && evt.data[0].slice(-9) == 'configure') {
+          //   console.log('start configure');
+          //   $.ajax({
+          //     url: evt.data[0],
+          //     type: 'POST',
+          //     contentType: false,
+          //     data: JSON.stringify(evt.data[1].configureData),
+          //   }).done(function (res) {
+          //     console.log(res); // here we get nothing as a response (still investigate why)
+          //     const obj = {
+          //       bodyUsed: false,
+          //       // headers: [...res.headers],
+          //       ok: 'OK',
+          //       redirected: res.redurected,
+          //       status: 200,
+          //       statusText: 'OK',
+          //       type: res.type,
+          //       url: res.url,
+          //     };
+
+          //     port.postMessage(obj);
+
+          //     // Pipe the request to the port (MessageChannel)
+          //     const reader = res.body.getReader();
+          //     const pump = () =>
+          //       reader
+          //         .read()
+          //         .then(({ value, done }) =>
+          //           done ? port.postMessage(done) : (port.postMessage(value), pump()),
+          //         );
+
+          //     // start the pipe
+          //     pump();
+          //   });
+          // } else {
+
+          fetch(evt.data[0], option).then((res) => {
+            // the response is not clonable
+            // so we make a new plain object
+            console.log(res);
+            const obj = {
+              bodyUsed: false,
+              headers: [...res.headers],
+              ok: res.ok,
+              redirected: res.redurected,
+              status: res.status,
+              statusText: res.statusText,
+              type: res.type,
+              url: res.url,
+            };
+
+            port.postMessage(obj);
+
+            // Pipe the request to the port (MessageChannel)
+            const reader = res.body.getReader();
+            const pump = () =>
+              reader
+                .read()
+                .then(({ value, done }) =>
+                  done ? port.postMessage(done) : (port.postMessage(value), pump()),
+                );
+
+            // start the pipe
+            pump();
+          });
+          // }
+        }
+      };
+    </script>
+  </body>
+</html>

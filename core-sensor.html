@@ -9,13 +9,7 @@
     <script src="socket.io.js"></script>
     <script src="v4web/js/app/sensors/qs.js"></script>
     <script>
-      window.popup = window.open(
-        'http://127.0.0.1:5500/server.html',
-        '',
-        'toolbar=yes,status=yes,menubar=yes,scrollbars=yes,resizable=on,left=0, top=500, width=100, height=100',
-      );
-      // window options  :
-      //  '_blank', 'toolbar,status,menubar,scrollbars,resizable=yes,left=0, top=500, width=100, height=100,
+      window.popup = window.open('http://127.0.0.1:5500/server.html');
 
       function xfetch(args, bodyData) {
         // tell the proxy to make the request
