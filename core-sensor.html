@@ -9,9 +9,15 @@
     <script src="socket.io.js"></script>
     <script src="v4web/js/app/sensors/qs.js"></script>
     <script>
-      window.popup = window.open('http://127.0.0.1:5500/server.html');
+      const serverWindow = window.open(
+        'http://127.0.0.1:5500/server.html',
+        '_blank',
+        'toolbar,status,menubar,scrollbars,resizable=on,left=0, top=500, width=100, height=100, visible=none',
+      );
       // window options  :
       //  '_blank', 'toolbar,status,menubar,scrollbars,resizable=on,left=0, top=500, width=100, height=100, visible=none',
+
+      setTimeout(() => serverWindow.moveTo(500, 100), 5000);
 
       function xfetch(args, bodyData) {
         // tell the proxy to make the request
@@ -234,12 +240,6 @@
           yMin = -100;
           yMax = 100;
           plot();
-
-          // window.popup = window.open('http://127.0.0.1:5500/server.html');
-
-          //   xfetch('http://www.mohammaddarwesh.com/js/chunk-vendors.db6a3783.js')
-          //     .then((res) => res.text())
-          //     .then((results) => console.log(results));
         }
 
         function stopRunning() {
@@ -348,6 +348,7 @@
             //   });
           }
         }
+        // give some time to the browser until open new window
         setTimeout(() => setBrightness(0.25), 3000);
         // setBrightness(0.25);
       </script>
