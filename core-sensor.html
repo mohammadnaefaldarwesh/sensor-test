@@ -331,7 +331,10 @@
             xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/brightness`, {
               level: byteLevel,
             })
-              .then((res) => console.log(`Brightness: ${level}`))
+              .then((res) => {
+                console.log(res);
+                console.log(`Brightness: ${level}`);
+              })
               .catch((err) => console.log(err));
 
             // $.ajax({
