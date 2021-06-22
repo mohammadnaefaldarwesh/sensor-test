@@ -597,15 +597,15 @@
                       //   .read()
                       //   .then(({ value, done }) => {
                       //     console.log(value, done);
-                          console.log(`Current position = ${res.position}`);
-                        // })
-                        .then(() => (exerciseSocket = getExerciseSocket()));
+                      console.log(`Current position = ${res.position}`);
                     })
-                    .catch((err) => console.log(err));
+                    .then(() => (exerciseSocket = getExerciseSocket()));
                 })
                 .catch((err) => console.log(err));
             })
             .catch((err) => console.log(err));
+          // })
+          // .catch((err) => console.log(err));
 
           // First finish to (re-)enter exercise.
           // $.ajax({
