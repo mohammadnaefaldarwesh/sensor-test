@@ -591,14 +591,14 @@
                   initChart();
                   xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
                     .then((res) => {
-                      console.log(RES);
-                      const reader = res.body.getReader();
-                      reader
-                        .read()
-                        .then(({ value, done }) => {
-                          console.log(value, done);
+                      console.log(res);
+                      // const reader = res.body.getReader();
+                      // reader
+                      //   .read()
+                      //   .then(({ value, done }) => {
+                      //     console.log(value, done);
                           console.log(`Current position = ${res.position}`);
-                        })
+                        // })
                         .then(() => (exerciseSocket = getExerciseSocket()));
                     })
                     .catch((err) => console.log(err));
