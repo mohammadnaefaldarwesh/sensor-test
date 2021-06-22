@@ -592,12 +592,14 @@
                   xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
                     .then((res) => {
                       const reader = data.body.getReader();
-                      reader.read().then(({ value, done }) => {
-                        console.log(value, done);
-                        console.log(`Current position = ${res.position}`);
-                      });
+                      reader
+                        .read()
+                        .then(({ value, done }) => {
+                          console.log(value, done);
+                          console.log(`Current position = ${res.position}`);
+                        })
+                        .then(() => (exerciseSocket = getExerciseSocket()));
                     })
-                    .then(() => (exerciseSocket = getExerciseSocket()))
                     .catch((err) => console.log(err));
                 })
                 .catch((err) => console.log(err));
