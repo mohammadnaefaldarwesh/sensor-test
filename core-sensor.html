@@ -331,12 +331,7 @@
             xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/brightness`, {
               level: byteLevel,
             })
-              .then((res) => {
-                res.json().then((res) => {
-                  console.log(res);
-                  console.log(`Brightness: ${level}`);
-                });
-              })
+              .then(() => console.log(`Brightness: ${level}`))
               .catch((err) => console.log(err));
 
             // $.ajax({
@@ -579,10 +574,8 @@
                   initChart();
                   xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
                     .then((res) => {
-                      console.log(res);
-                      const reader = res.body.getReader();
-                      reader.read().then(({ value, done }) => {
-                        console.log(value, done);
+                      res.json().then((res) => {
+                        console.log(res);
                         console.log(`Current position = ${res.position}`);
                       });
                     })
