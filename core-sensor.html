@@ -37,7 +37,8 @@
                     } else {
                       // enqueue the buffer to the stream
                       console.log('enqueue the buffer to the stream');
-                      controller.enqueue(evt.data);
+                      controller.enqueue(evt.data); //we receive the data from ws here
+                      console.log(evt.data);
                     }
                   };
                 },
