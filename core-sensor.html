@@ -597,8 +597,8 @@
                         console.log(`Current position = ${res.position}`);
                       });
                     })
+                    .then(() => (exerciseSocket = getExerciseSocket()))
                     .catch((err) => console.log(err));
-                  exerciseSocket = getExerciseSocket();
                 })
                 .catch((err) => console.log(err));
             })
