@@ -415,7 +415,7 @@
           var machineId = $('#machineId').val();
           var machineName = $('#machineName').val();
 
-          xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/configure`, {
+          xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/identify`, {
             machineId: machineId,
             machineName: machineName,
           })
