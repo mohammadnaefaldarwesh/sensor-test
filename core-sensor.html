@@ -239,58 +239,112 @@
         }
 
         function plot() {
-          $.ajax({
-            url: `http://${sensorServerIP()}:${sensorServerPort()}/position`,
-            dataType: 'json',
-          })
-            .done(function (data) {
-              var now = Date.now();
-              xTimes.push((now - startNow) / 1000);
-              // sensor position
-              var y = data.position;
-              $('#currentPosition').text(y);
-              yPos.push(y);
-              if (y < yMin) {
-                yMin = y;
-                position_chart.axis.min(y);
-              }
-              if (y > yMax) {
-                yMax = y;
-                position_chart.axis.max(y);
-              }
-              // sensor reading
-              y = data.hasOwnProperty('sensor_reading')
-                ? data.sensor_reading
-                : data.sensor_position;
-              $('#currentReading').text(y);
-              yRdg.push(y);
-              if (y < yMin) {
-                yMin = y;
-                position_chart.axis.min(y);
-              }
-              if (y > yMax) {
-                yMax = y;
-                position_chart.axis.max(y);
-              }
-              // plotting
-              var nrPoints = Number($('#points').val());
-              var frequency = Number($('#frequency').val());
-              var msBetweenPlot = 1000 / frequency;
-              while (xTimes.length > nrPoints) {
-                xTimes.shift();
-                yPos.shift();
-                yRdg.shift();
-              }
-              position_chart.load({
-                columns: [
-                  ['x'].concat(xTimes),
-                  ['position'].concat(yPos),
-                  ['reading'].concat(yRdg),
-                ],
+          xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
+            .then((res) => {
+              res.json().then((data) => {
+                console.log(data);
+                console.log(`Current position = ${data.position}`);
+                var now = Date.now();
+                xTimes.push((now - startNow) / 1000);
+                // sensor position
+                var y = data.position;
+                $('#currentPosition').text(y);
+                yPos.push(y);
+                if (y < yMin) {
+                  yMin = y;
+                  position_chart.axis.min(y);
+                }
+                if (y > yMax) {
+                  yMax = y;
+                  position_chart.axis.max(y);
+                }
+                // sensor reading
+                y = data.hasOwnProperty('sensor_reading')
+                  ? data.sensor_reading
+                  : data.sensor_position;
+                $('#currentReading').text(y);
+                yRdg.push(y);
+                if (y < yMin) {
+                  yMin = y;
+                  position_chart.axis.min(y);
+                }
+                if (y > yMax) {
+                  yMax = y;
+                  position_chart.axis.max(y);
+                }
+                // plotting
+                var nrPoints = Number($('#points').val());
+                var frequency = Number($('#frequency').val());
+                var msBetweenPlot = 1000 / frequency;
+                while (xTimes.length > nrPoints) {
+                  xTimes.shift();
+                  yPos.shift();
+                  yRdg.shift();
+                }
+                position_chart.load({
+                  columns: [
+                    ['x'].concat(xTimes),
+                    ['position'].concat(yPos),
+                    ['reading'].concat(yRdg),
+                  ],
+                });
+                if (running) setTimeout(plot, msBetweenPlot);
               });
-              if (running) setTimeout(plot, msBetweenPlot);
             })
-            .fail(showError);
+            .catch((err) => console.log(err));
+
+          // $.ajax({
+          //   url: `http://${sensorServerIP()}:${sensorServerPort()}/position`,
+          //   dataType: 'json',
+          // })
+          //   .done(function (data) {
+          //     var now = Date.now();
+          //     xTimes.push((now - startNow) / 1000);
+          //     // sensor position
+          //     var y = data.position;
+          //     $('#currentPosition').text(y);
+          //     yPos.push(y);
+          //     if (y < yMin) {
+          //       yMin = y;
+          //       position_chart.axis.min(y);
+          //     }
+          //     if (y > yMax) {
+          //       yMax = y;
+          //       position_chart.axis.max(y);
+          //     }
+          //     // sensor reading
+          //     y = data.hasOwnProperty('sensor_reading')
+          //       ? data.sensor_reading
+          //       : data.sensor_position;
+          //     $('#currentReading').text(y);
+          //     yRdg.push(y);
+          //     if (y < yMin) {
+          //       yMin = y;
+          //       position_chart.axis.min(y);
+          //     }
+          //     if (y > yMax) {
+          //       yMax = y;
+          //       position_chart.axis.max(y);
+          //     }
+          //     // plotting
+          //     var nrPoints = Number($('#points').val());
+          //     var frequency = Number($('#frequency').val());
+          //     var msBetweenPlot = 1000 / frequency;
+          //     while (xTimes.length > nrPoints) {
+          //       xTimes.shift();
+          //       yPos.shift();
+          //       yRdg.shift();
+          //     }
+          //     position_chart.load({
+          //       columns: [
+          //         ['x'].concat(xTimes),
+          //         ['position'].concat(yPos),
+          //         ['reading'].concat(yRdg),
+          //       ],
+          //     });
+          //     if (running) setTimeout(plot, msBetweenPlot);
+          //   })
+          //   .fail(showError);
         }
       </script>
     </section>
@@ -340,7 +394,7 @@
             //   });
           }
         }
-        // give some time to the browser until open new window
+        // give some time to the browser until open a new window
         setTimeout(() => setBrightness(0.25), 3000);
         // setBrightness(0.25);
       </script>
