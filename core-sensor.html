@@ -414,16 +414,30 @@
         function identify() {
           var machineId = $('#machineId').val();
           var machineName = $('#machineName').val();
-          $.ajax({
-            url: `http://${sensorServerIP()}:${sensorServerPort()}/identify`,
-            type: 'POST',
-            contentType: false,
-            data: JSON.stringify({ machineId: machineId, machineName: machineName }),
+
+          xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/configure`, {
+            machineId: machineId,
+            machineName: machineName,
           })
-            .done(function (data) {
-              $('#identifyResult').text(JSON.stringify(data));
+            .then((data) => {
+              console.log(data);
+              data.json().then((data) => {
+                console.log(data);
+                $('#identifyResult').text(JSON.stringify(data));
+              });
             })
-            .fail(showError);
+            .catch((err) => console.log(err));
+
+          // $.ajax({
+          //   url: `http://${sensorServerIP()}:${sensorServerPort()}/identify`,
+          //   type: 'POST',
+          //   contentType: false,
+          //   data: JSON.stringify({ machineId: machineId, machineName: machineName }),
+          // })
+          //   .done(function (data) {
+          //     $('#identifyResult').text(JSON.stringify(data));
+          //   })
+          //   .fail(showError);
         }
       </script>
     </section>
