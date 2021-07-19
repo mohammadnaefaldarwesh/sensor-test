@@ -786,7 +786,7 @@
             .then((data) => {
               data
                 .json()
-                .then((data) => console.log(`Exercise ${action}: ${JSON.stringify(data)}`))
+                .then((data) => console.log(`Exercise ${action}: ${data}`))
                 .catch((err) => console.log(err));
             })
             .catch((err) => {
