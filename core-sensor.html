@@ -687,34 +687,56 @@
         }
 
         function calibrate(isStart) {
-          $.ajax({
-            url: `http://${sensorServerIP()}:${sensorServerPort()}/position`,
-            dataType: 'json',
-          })
-            .done(function (data) {
-              var pos = Number.parseInt(data.position);
-              if (isStart) {
-                configureData.calibration.start = pos;
-                $('#calstart').text(pos);
-              } else {
-                configureData.calibration.end = pos;
-                $('#calend').text(pos);
-              }
-              console.log(
-                `Calibration: ${configureData.calibration.start} - ${configureData.calibration.end}`,
-              );
-              $.ajax({
-                url: `http://${sensorServerIP()}:${sensorServerPort()}/configure`,
-                type: 'POST',
-                contentType: false,
-                data: JSON.stringify(configureData),
-              }).fail(function (jqXHR, textStatus, errorThrown) {
-                showError(jqXHR, textStatus, errorThrown, 'configure');
+          xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/position`)
+            .then((data) => {
+              data.json().then((data) => {
+                console.log(data);
+                var pos = Number.parseInt(data.position);
+                if (isStart) {
+                  configureData.calibration.start = pos;
+                  $('#calstart').text(pos);
+                } else {
+                  configureData.calibration.end = pos;
+                  $('#calend').text(pos);
+                }
+                console.log(
+                  `Calibration: ${configureData.calibration.start} - ${configureData.calibration.end}`,
+                );
+
+                xfetch(`http://${sensorServerIP()}:${sensorServerPort()}/configure`, {
+                  configureData,
+                }).catch((err) => console.log(err));
               });
             })
-            .fail(function (jqXHR, textStatus, errorThrown) {
-              showError(jqXHR, textStatus, errorThrown, 'position');
-            });
+            .catch((err) => console.log(err));
+          // $.ajax({
+          //   url: `http://${sensorServerIP()}:${sensorServerPort()}/position`,
+          //   dataType: 'json',
+          // })
+          //   .done(function (data) {
+          //     var pos = Number.parseInt(data.position);
+          //     if (isStart) {
+          //       configureData.calibration.start = pos;
+          //       $('#calstart').text(pos);
+          //     } else {
+          //       configureData.calibration.end = pos;
+          //       $('#calend').text(pos);
+          //     }
+          // console.log(
+          //   `Calibration: ${configureData.calibration.start} - ${configureData.calibration.end}`,
+          // );
+          //   $.ajax({
+          //     url: `http://${sensorServerIP()}:${sensorServerPort()}/configure`,
+          //     type: 'POST',
+          //     contentType: false,
+          //     data: JSON.stringify(configureData),
+          //   }).fail(function (jqXHR, textStatus, errorThrown) {
+          //     showError(jqXHR, textStatus, errorThrown, 'configure');
+          //   });
+          // })
+          // .fail(function (jqXHR, textStatus, errorThrown) {
+          //   showError(jqXHR, textStatus, errorThrown, 'position');
+          // });
         }
       </script>
     </section>
