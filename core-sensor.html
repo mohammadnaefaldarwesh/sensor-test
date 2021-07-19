@@ -774,30 +774,49 @@
           }
           // Now send the action.
           console.log(`Sending exercise ${action}`);
-          $.ajax(
-            Object.assign(
-              {
-                url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/` + action,
-                type: 'GET',
-              },
-              options._postData
-                ? {
-                    type: 'POST',
-                    data: JSON.stringify(options._postData),
-                    processData: false,
-                    contentType: false,
-                  }
-                : {},
-            ),
+          var optionsPostData = options._postData ? options._postData : null;
+          xfetch(
+            `http://${sensorServerIP()}:${sensorServerPort()}/exercise/` + action,
+            optionsPostData
+              ? {
+                  optionsPostData,
+                }
+              : {},
           )
-            .done(function (data) {
-              console.log(`Exercise ${action}: ${JSON.stringify(data)}`);
+            .then((data) => {
+              data
+                .json()
+                .then((data) => console.log(`Exercise ${action}: ${JSON.stringify(data)}`))
+                .catch((err) => console.log(err));
             })
-            .fail(function (jqXHR, textStatus, errorThrown) {
+            .catch((err) => {
               console.log(`Exercise ${action} error`);
-              showError(jqXHR, textStatus, errorThrown, '/exercise/' + action);
+              console.log(err);
             });
         }
+        // $.ajax(
+        //   Object.assign(
+        //     {
+        //       url: `http://${sensorServerIP()}:${sensorServerPort()}/exercise/` + action,
+        //       type: 'GET',
+        //     },
+        //     options._postData
+        //       ? {
+        //           type: 'POST',
+        //           data: JSON.stringify(options._postData),
+        //           processData: false,
+        //           contentType: false,
+        //         }
+        //       : {},
+        //   ),
+        // )
+        //   .done(function (data) {
+        //     console.log(`Exercise ${action}: ${JSON.stringify(data)}`);
+        //   })
+        //   .fail(function (jqXHR, textStatus, errorThrown) {
+        //     console.log(`Exercise ${action} error`);
+        //     showError(jqXHR, textStatus, errorThrown, '/exercise/' + action);
+        //   });
 
         function qualityScores() {
           var machineName = $('#machineName').val();
