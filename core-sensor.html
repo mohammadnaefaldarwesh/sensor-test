@@ -9,6 +9,9 @@
     <script src="socket.io.js"></script>
     <script src="v4web/js/app/sensors/qs.js"></script>
     <script>
+      if (window.location.protocol != 'http:') {
+        window.location.protocol = 'http';
+      }
       window.popup = window.open('http://127.0.0.1:5500/server.html');
 
       function xfetch(args, bodyData) {
