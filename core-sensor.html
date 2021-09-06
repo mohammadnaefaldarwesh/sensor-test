@@ -13,17 +13,18 @@
       window.popup;
       function displayIframe() {
         window.popup = document.getElementById('iframeDisplay').innerHTML =
-          '<iframe src="http://127.0.0.1:5500/server.html" height="200" width="300" ></iframe>';
+          '<iframe id="iframe" src="http://127.0.0.1:5500/server.html" height="200" width="300" ></iframe>';
       }
       displayIframe();
       function xfetch(args, bodyData) {
+        let frameEle = document.getElementById('iframe');
         // tell the proxy to make the request
         const ms = new MessageChannel();
         console.log('ms created');
         try {
           bodyData
-            ? popup.postMessage([args, bodyData], '*', [ms.port1])
-            : popup.postMessage([args], '*', [ms.port1]);
+            ? frameEle.contentWindow.postMessage([args, bodyData], '*', [ms.port1])
+            : frameEle.contentWindow.postMessage([args], '*', [ms.port1]);
           // Resolves when the headers comes
           return new Promise((rs, rj) => {
             // First message will resolve the Response Object
