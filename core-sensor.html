@@ -17,8 +17,8 @@
         console.log('ms created');
         try {
           bodyData
-            ? popup.contentWindow.postMessage([args, bodyData], '*', [ms.port1])
-            : popup.contentWindow.postMessage([args], '*', [ms.port1]);
+            ? popup.postMessage([args, bodyData], '*', [ms.port1])
+            : popup.postMessage([args], '*', [ms.port1]);
           // Resolves when the headers comes
           return new Promise((rs, rj) => {
             // First message will resolve the Response Object
