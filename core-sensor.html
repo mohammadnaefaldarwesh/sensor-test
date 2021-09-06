@@ -9,22 +9,16 @@
     <script src="socket.io.js"></script>
     <script src="v4web/js/app/sensors/qs.js"></script>
     <script>
-      // window.popup = window.open('http://127.0.0.1:5500/server.html');
-      window.popup;
-      function displayIframe() {
-        window.popup = document.getElementById('iframeDisplay').innerHTML =
-          '<iframe id="iframe" src="http://127.0.0.1:5500/server.html" height="200" width="300" ></iframe>';
-      }
-      displayIframe();
+      window.popup = window.open('http://127.0.0.1:5500/server.html');
+
       function xfetch(args, bodyData) {
-        let frameEle = document.getElementById('iframe');
         // tell the proxy to make the request
         const ms = new MessageChannel();
         console.log('ms created');
         try {
           bodyData
-            ? frameEle.contentWindow.postMessage([args, bodyData], '*', [ms.port1])
-            : frameEle.contentWindow.postMessage([args], '*', [ms.port1]);
+            ? popup.contentWindow.postMessage([args, bodyData], '*', [ms.port1])
+            : popup.contentWindow.postMessage([args], '*', [ms.port1]);
           // Resolves when the headers comes
           return new Promise((rs, rj) => {
             // First message will resolve the Response Object
@@ -862,8 +856,5 @@
         }
       </script>
     </section>
-    <p>This is IFrame</p>
-    <button onclick="displayIframe()">Click me</button>
-    <div id="iframeDisplay"></div>
   </body>
 </html>
